@@ -7,6 +7,10 @@
     "output"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/paf31/purescript-incremental.git"
+  },
   "dependencies": {
     "purescript-prelude": "^2.5.0",
     "purescript-console": "^2.0.0",
