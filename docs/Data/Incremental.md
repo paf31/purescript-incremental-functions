@@ -97,7 +97,7 @@ changeOf :: forall a. D1 a -> Change a
 lam :: forall a b da db. (ChangeStructure a da, ChangeStructure b db) => (D1 a -> D1 b) -> D1 (a -> b)
 ```
 
-Lambda abstractionion
+Lambda abstraction
 
 #### `app`
 
