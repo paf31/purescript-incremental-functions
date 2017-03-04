@@ -1,0 +1,19 @@
+{
+  "name": "purescript-incremental",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-prelude": "^2.5.0",
+    "purescript-console": "^2.0.0",
+    "purescript-group": "^1.1.0",
+    "purescript-maps": "^2.1.2",
+    "purescript-these": "^2.0.0"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^2.0.0"
+  }
+}
