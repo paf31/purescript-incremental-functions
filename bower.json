@@ -12,13 +12,11 @@
     "url": "git://github.com/paf31/purescript-incremental.git"
   },
   "dependencies": {
-    "purescript-prelude": "^2.5.0",
-    "purescript-console": "^2.0.0",
-    "purescript-group": "^1.1.0",
-    "purescript-maps": "^2.1.2",
-    "purescript-these": "^2.0.0"
+    "purescript-maps": "^3.0.0",
+    "purescript-these": "^3.0.0"
   },
   "devDependencies": {
-    "purescript-psci-support": "^2.0.0"
+    "purescript-console": "^3.0.0",
+    "purescript-psci-support": "^3.0.0"
   }
 }

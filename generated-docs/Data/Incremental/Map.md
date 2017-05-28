@@ -55,7 +55,7 @@ Newtype (MapChanges k v dv) _
 #### `key`
 
 ``` purescript
-key :: forall k v dv. (Ord k, ChangeStructure v dv) => k -> D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+key :: forall k v dv. Ord k => ChangeStructure v dv => k -> D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
 ```
 
 Update a single key by applying a function.
@@ -63,7 +63,7 @@ Update a single key by applying a function.
 #### `each`
 
 ``` purescript
-each :: forall k v dv. (Ord k, ChangeStructure v dv) => D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+each :: forall k v dv. Ord k => ChangeStructure v dv => D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
 ```
 
 Update every key by applying a function.

@@ -5,19 +5,19 @@ import Data.Map as Map
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log, logShow)
 import Data.Incremental (D1(..), app, changeOf, fromChange, lam, patch, runFunctionChange, toChange, valueOf)
+import Data.Incremental.Abelian (WrappedAbelian(..))
 import Data.Incremental.Map (MapChange(..), MapChanges(..), WrappedMap(..), key)
-import Data.Incremental.WrappedGroup (WrappedGroup(..))
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (unwrap, wrap)
 
 -- | Integers with a change structure given by group under addition
-type Int' = WrappedGroup (Additive Int)
+type Int' = WrappedAbelian (Additive Int)
 
 -- | The function \x -> x * 2, together with its derivative
 double :: D1 (Int' -> Int')
-double = lam \(D1 (WrappedGroup (Additive a)) da) ->
-  D1 (WrappedGroup (Additive (a * 2)))
-     (toChange (WrappedGroup (Additive (unwrap (unwrap (fromChange da)) * 2))))
+double = lam \(D1 (WrappedAbelian (Additive a)) da) ->
+  D1 (WrappedAbelian (Additive (a * 2)))
+     (toChange (WrappedAbelian (Additive (unwrap (unwrap (fromChange da)) * 2))))
 
 -- | The `double` function iterated three times
 times8 :: D1 (Int' -> Int')
