@@ -74,7 +74,7 @@ valueOf (D1 a _) = a
 changeOf :: forall a. D1 a -> Change a
 changeOf (D1 _ da) = da
 
--- | Lambda abstractionion
+-- | Lambda abstraction
 lam :: forall a b da db. ChangeStructure a da => ChangeStructure b db => (D1 a -> D1 b) -> D1 (a -> b)
 lam f =
   D1 (\a -> valueOf (f (D1 a (toChange (mempty :: da)))))
