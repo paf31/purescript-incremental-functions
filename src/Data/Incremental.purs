@@ -27,6 +27,7 @@ module Data.Incremental
 import Prelude
 
 import Data.Monoid (class Monoid, mempty)
+import Data.Tuple (Tuple(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | A "change structure" on `a` consists of a monoid `d` of changes, together with
@@ -50,6 +51,14 @@ instance monoidFunctionChange :: Monoid db => Monoid (FunctionChange a da db) wh
 instance diffFunctionChange :: (ChangeStructure a da, ChangeStructure b db) => ChangeStructure (a -> b) (FunctionChange a da db) where
   diff f g = FunctionChange \a da -> f (a `patch` da) `diff` g a
   patch f (FunctionChange df) a = f a `patch` df a (mempty :: da)
+
+instance diffUnit :: ChangeStructure Unit Unit where
+  diff _ _ = unit
+  patch _ _ = unit
+
+instance diffTuple :: (ChangeStructure a da, ChangeStructure b db) => ChangeStructure (Tuple a b) (Tuple da db) where
+  diff (Tuple a b) (Tuple c d) = Tuple (diff a c) (diff b d)
+  patch (Tuple a b) (Tuple c d) = Tuple (patch a c) (patch b d)
 
 -- | A type level function which maps a type to the type of its change structure.
 -- |

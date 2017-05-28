@@ -22,6 +22,8 @@ diff and patch functions.
 ##### Instances
 ``` purescript
 (ChangeStructure a da, ChangeStructure b db) => ChangeStructure (a -> b) (FunctionChange a da db)
+ChangeStructure Unit Unit
+(ChangeStructure a da, ChangeStructure b db) => ChangeStructure (Tuple a b) (Tuple da db)
 ```
 
 #### `FunctionChange`
