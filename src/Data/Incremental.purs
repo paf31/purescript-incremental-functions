@@ -75,13 +75,13 @@ changeOf :: forall a. D1 a -> Change a
 changeOf (D1 _ da) = da
 
 -- | Lambda abstractionion
-lam :: forall a b da db. (ChangeStructure a da, ChangeStructure b db) => (D1 a -> D1 b) -> D1 (a -> b)
+lam :: forall a b da db. ChangeStructure a da => ChangeStructure b db => (D1 a -> D1 b) -> D1 (a -> b)
 lam f =
   D1 (\a -> valueOf (f (D1 a (toChange (mempty :: da)))))
      (toChange (FunctionChange \a da -> fromChange (changeOf (f (D1 a (toChange da))))))
 
 -- | Function application
-app :: forall a b da db. (ChangeStructure a da, ChangeStructure b db) => D1 (a -> b) -> D1 a -> D1 b
+app :: forall a b da db. ChangeStructure a da => ChangeStructure b db => D1 (a -> b) -> D1 a -> D1 b
 app (D1 f df) (D1 a da) = D1 (f a) (toChange (runFunctionChange (fromChange df) a (fromChange da)))
 
 -- | A constant term

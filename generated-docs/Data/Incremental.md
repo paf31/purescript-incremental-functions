@@ -94,7 +94,7 @@ changeOf :: forall a. D1 a -> Change a
 #### `lam`
 
 ``` purescript
-lam :: forall a b da db. (ChangeStructure a da, ChangeStructure b db) => (D1 a -> D1 b) -> D1 (a -> b)
+lam :: forall a b da db. ChangeStructure a da => ChangeStructure b db => (D1 a -> D1 b) -> D1 (a -> b)
 ```
 
 Lambda abstractionion
@@ -102,7 +102,7 @@ Lambda abstractionion
 #### `app`
 
 ``` purescript
-app :: forall a b da db. (ChangeStructure a da, ChangeStructure b db) => D1 (a -> b) -> D1 a -> D1 b
+app :: forall a b da db. ChangeStructure a da => ChangeStructure b db => D1 (a -> b) -> D1 a -> D1 b
 ```
 
 Function application

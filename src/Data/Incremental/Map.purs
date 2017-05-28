@@ -84,7 +84,7 @@ instance changeStructureMap
         _ -> Nothing
 
 -- | Update a single key by applying a function.
-key :: forall k v dv. (Ord k, ChangeStructure v dv) => k -> D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+key :: forall k v dv. Ord k => ChangeStructure v dv => k -> D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
 key k =
   lam \(D1 f df) ->
     lam \(D1 (WrappedMap m) dm) ->
@@ -92,7 +92,7 @@ key k =
          (toChange (MapChanges (Map.update (\dv -> map (\v -> changeMap df v dv) (Map.lookup k m)) k (unwrap (fromChange dm)))))
 
 -- | Update every key by applying a function.
-each :: forall k v dv. (Ord k, ChangeStructure v dv) => D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+each :: forall k v dv. Ord k => ChangeStructure v dv => D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
 each =
     lam \(D1 f df) ->
       lam \(D1 (WrappedMap m) dm) ->
