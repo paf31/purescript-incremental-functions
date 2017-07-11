@@ -4,4 +4,4 @@ Incremental lambda calculus in the HOAS style, based on
 
 > "A Theory of Changes for Higher-Order Languages" by Cai, Gairrusso, Rendel and Ostermann.
 
-- [Module Documentation](docs/Data)
+- [Module Documentation](generated-docs/Data)
