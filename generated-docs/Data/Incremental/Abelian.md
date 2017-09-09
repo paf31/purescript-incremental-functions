@@ -20,6 +20,14 @@ Laws:
 (Group g) => Group (WrappedAbelian g)
 ```
 
+#### `subtract`
+
+``` purescript
+subtract :: forall g. Group g => g -> g -> g
+```
+
+Subtraction in a group.
+
 #### `Abelian`
 
 ``` purescript
@@ -36,14 +44,6 @@ _commutativity law_:
 (Ring a) => Abelian (Additive a)
 (Abelian g) => Abelian (WrappedAbelian g)
 ```
-
-#### `subtract`
-
-``` purescript
-subtract :: forall g. Group g => g -> g -> g
-```
-
-Subtraction in a group.
 
 #### `WrappedAbelian`
 
