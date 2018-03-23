@@ -7,21 +7,16 @@
 -- | function changes.
 
 module Data.Incremental
-  ( class ChangeStructure
-  , diff
+  ( class Patch
   , patch
-  , FunctionChange
-  , runFunctionChange
+  , class Diff
+  , diff
   , Change
   , fromChange
   , toChange
-  , D1(..)
-  , valueOf
-  , changeOf
-  , lam
-  , app
+  , Jet
   , constant
-  , applyPatch
+  , change
   ) where
 
 import Prelude
@@ -30,35 +25,24 @@ import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
 import Unsafe.Coerce (unsafeCoerce)
 
--- | A "change structure" on `a` consists of a monoid `d` of changes, together with
--- | diff and patch functions.
-class Monoid d <= ChangeStructure a d | a -> d where
-  diff :: a -> a -> d
+-- | The monoid `d` of changes acts on values of type `a`.
+class Monoid d <= Patch a d | a -> d where
   patch :: a -> d -> a
 
--- | A change structure for functions
-newtype FunctionChange a da db = FunctionChange (a -> da -> db)
+class Patch a d <= Diff a d | a -> d where
+  diff :: a -> a -> d
 
-runFunctionChange :: forall a da db. FunctionChange a da db -> a -> da -> db
-runFunctionChange (FunctionChange df) = df
-
-instance semigroupFunctionChange :: Semigroup db => Semigroup (FunctionChange a da db) where
-  append (FunctionChange f) (FunctionChange g) = FunctionChange \a da -> f a da <> g a da
-
-instance monoidFunctionChange :: Monoid db => Monoid (FunctionChange a da db) where
-  mempty = FunctionChange \_ _-> mempty
-
-instance diffFunctionChange :: (ChangeStructure a da, ChangeStructure b db) => ChangeStructure (a -> b) (FunctionChange a da db) where
-  diff f g = FunctionChange \a da -> f (a `patch` da) `diff` g a
-  patch f (FunctionChange df) a = f a `patch` df a (mempty :: da)
-
-instance diffUnit :: ChangeStructure Unit Unit where
-  diff _ _ = unit
+instance patchUnit :: Patch Unit Unit where
   patch _ _ = unit
 
-instance diffTuple :: (ChangeStructure a da, ChangeStructure b db) => ChangeStructure (Tuple a b) (Tuple da db) where
-  diff (Tuple a b) (Tuple c d) = Tuple (diff a c) (diff b d)
+instance diffUnit :: Diff Unit Unit where
+  diff _ _ = unit
+
+instance patchTuple :: (Patch a da, Patch b db) => Patch (Tuple a b) (Tuple da db) where
   patch (Tuple a b) (Tuple c d) = Tuple (patch a c) (patch b d)
+
+instance diffTuple :: (Diff a da, Diff b db) => Diff (Tuple a b) (Tuple da db) where
+  diff (Tuple a b) (Tuple c d) = Tuple (diff a c) (diff b d)
 
 -- | A type level function which maps a type to the type of its change structure.
 -- |
@@ -66,37 +50,38 @@ instance diffTuple :: (ChangeStructure a da, ChangeStructure b db) => ChangeStru
 -- | since the functional dependency makes the change structure type unique.
 data Change a
 
-fromChange :: forall a da. ChangeStructure a da => Change a -> da
+instance semigroupChange :: (Patch a da, Semigroup da) => Semigroup (Change a) where
+  append x y = toChange (fromChange x <> fromChange y)
+
+instance monoidChange :: (Patch a da, Monoid da) => Monoid (Change a) where
+  mempty = toChange mempty
+
+fromChange :: forall a da. Patch a da => Change a -> da
 fromChange = unsafeCoerce
 
-toChange :: forall a da. ChangeStructure a da => da -> Change a
+toChange :: forall a da. Patch a da => da -> Change a
 toChange = unsafeCoerce
 
--- | A term paired with its rate of change.
+-- | A value (`position`) paired with a change (`velocity`).
 -- |
--- | We can think of these modified terms as conceptually similar to dual numbers.
-data D1 a = D1 a (Change a)
-
-valueOf :: forall a. D1 a -> a
-valueOf (D1 a _) = a
-
-changeOf :: forall a. D1 a -> Change a
-changeOf (D1 _ da) = da
-
--- | Lambda abstraction
-lam :: forall a b da db. ChangeStructure a da => ChangeStructure b db => (D1 a -> D1 b) -> D1 (a -> b)
-lam f =
-  D1 (\a -> valueOf (f (D1 a (toChange (mempty :: da)))))
-     (toChange (FunctionChange \a da -> fromChange (changeOf (f (D1 a (toChange da))))))
-
--- | Function application
-app :: forall a b da db. ChangeStructure a da => ChangeStructure b db => D1 (a -> b) -> D1 a -> D1 b
-app (D1 f df) (D1 a da) = D1 (f a) (toChange (runFunctionChange (fromChange df) a (fromChange da)))
+-- | We can think of these modified terms as conceptually similar to dual
+-- | numbers.
+-- |
+-- | We can use functions of type `Jet a -> Jet b` as incremental
+-- | functions from `a` to `b`, which gives us a HOAS-style DSL for working
+-- | with jets.
+type Jet a =
+  { position :: a
+  , velocity :: Change a
+  }
 
 -- | A constant term
-constant :: forall a da. ChangeStructure a da => a -> D1 a
-constant a = D1 a (toChange (mempty :: da))
+constant :: forall a da. Patch a da => a -> Jet a
+constant position = { position, velocity: mempty }
 
 -- | Create a function which applies a patch to its input
-applyPatch :: forall a da. ChangeStructure a da => da -> D1 (a -> a)
-applyPatch da = D1 (_ `patch` da) (toChange (FunctionChange \_ c -> c <> da))
+change :: forall a da. Patch a da => Change a -> Jet a -> Jet a
+change c { position, velocity } =
+  { position: position `patch` fromChange c
+  , velocity
+  }

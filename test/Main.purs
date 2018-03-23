@@ -3,58 +3,58 @@ module Test.Main where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
-import Data.Incremental (D1(..), app, changeOf, fromChange, lam, patch, runFunctionChange, toChange, valueOf)
-import Data.Incremental.Eq (WrappedEq(..))
-import Data.Incremental.Map (MapChange(..), MapChanges(..), WrappedMap(..), key)
+import Data.Incremental (Jet, constant, fromChange, toChange)
+import Data.Incremental.Eq as IEq
+import Data.Incremental.Array as IArray
+import Data.Incremental.Map as IMap
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
 import Data.Maybe.Last (Last(..))
-import Data.Newtype (wrap)
-
--- | Integers with a change structure given by the `Eq` instance
-type Int' = WrappedEq Int
+import Data.Monoid (mempty)
+import Data.Newtype (unwrap, wrap)
+import Data.Tuple (Tuple(..))
+import Test.Assert (ASSERT, assert)
 
 -- | The function \x -> x * 2, together with its derivative
-double :: D1 (Int' -> Int')
-double = lam \(D1 (WrappedEq a) da) ->
-  D1 (WrappedEq (a * 2))
-     (toChange (map (_ * 2) (fromChange da)))
+times2 :: Jet (IEq.WrappedEq Int) -> Jet (IEq.WrappedEq Int)
+times2 { position, velocity } =
+  { position: wrap (unwrap position * 2)
+  , velocity: toChange (map (_ * 2) (fromChange velocity))
+  }
 
 -- | The `double` function iterated three times
-times8 :: D1 (Int' -> Int')
-times8 = lam \x -> double `app` (double `app` (double `app` x))
+times8 :: Jet (IEq.WrappedEq Int) -> Jet (IEq.WrappedEq Int)
+times8 = times2 >>> times2 >>> times2
 
-main :: Eff (console :: CONSOLE) Unit
+main :: Eff (assert :: ASSERT) Unit
 main = do
-  log "Integer example"
-  log ""
+  let t1 = times8 (constant (wrap 1))
+  assert (t1.position == wrap 8)
+  assert (fromChange t1.velocity == mempty)
 
-  log "times8 n ="
-  let n = wrap 1
-  logShow (valueOf times8 n)
+  let t2 = times8 { position: wrap 1, velocity: IEq.replace 2 }
+  assert (t2.position == wrap 8)
+  assert (fromChange t2.velocity == Last (pure 16))
 
-  log "times8 (n <> dn) ="
-  let dn = Last (Just 2)
-  logShow (valueOf times8 (patch n dn))
+  let t3 = IMap.modifyAt 1 times8 (constant (wrap (Map.fromFoldable [Tuple 1 (wrap 1), Tuple 2 (wrap 2)])))
+  assert (unwrap t3.position == Map.fromFoldable [Tuple 1 (wrap 8), Tuple 2 (wrap 2)])
 
-  log "d_times8 n 1 ="
-  let d_times8 = fromChange (changeOf times8)
-  logShow (runFunctionChange d_times8 n dn)
+  let t4 = IMap.modifyAt 1 times8
+             { position: wrap (Map.fromFoldable [Tuple 1 (wrap 1), Tuple 2 (wrap 2)])
+             , velocity: IMap.updateAt 1 (IEq.replace 2)
+             }
+  assert (unwrap t4.position == Map.fromFoldable [Tuple 1 (wrap 8), Tuple 2 (wrap 2)])
+  assert (fromChange t4.velocity == fromChange (IMap.updateAt 1 (IEq.replace 16)))
 
-  log ""
-  log "Map example"
-  log ""
+  let t5 = IArray.map times8
+             { position: wrap [wrap 1, wrap 2]
+             , velocity: IArray.modifyAt 1 (IEq.replace 3)
+             }
+  assert (unwrap t5.position == [wrap 8, wrap 16])
+  assert (fromChange t5.velocity == fromChange (IArray.modifyAt 1 (IEq.replace 24)))
 
-  log "key 1 times8 m ="
-  let m = WrappedMap (Map.singleton 1 (wrap 1) <> Map.singleton 2 (wrap 1))
-      f = key 1 `app` times8
-  logShow (valueOf f m)
-
-  let dm = MapChanges (Map.singleton 1 (Update (Last (Just 2))))
-  log "key 1 times8 (m + dm) ="
-  logShow (valueOf f (patch m dm))
-
-  log "d_(key 1) times8 dm ="
-  let df = fromChange (changeOf f)
-  logShow (runFunctionChange df m dm)
+  let t6 = IArray.map (IArray.map times8)
+             { position: wrap [wrap [wrap 1, wrap 2], wrap [wrap 3]]
+             , velocity: IArray.modifyAt 0 (IArray.modifyAt 1 (IEq.replace 4))
+             }
+  assert (unwrap t6.position == [wrap [wrap 8, wrap 16], wrap [wrap 24]])
+  assert (fromChange t6.velocity == fromChange (IArray.modifyAt 0 (IArray.modifyAt 1 (IEq.replace 32))))
