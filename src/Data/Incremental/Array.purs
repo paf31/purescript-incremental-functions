@@ -43,9 +43,9 @@ instance patchWrappedArray
     :: Patch a da
     => Patch (WrappedArray a) (Array (ArrayChange a da)) where
   patch (WrappedArray xs) = WrappedArray <<< foldl patchOne xs where
-    patchOne xs_ (InsertAt i x)   = fromMaybe xs_ (Array.insertAt i x xs)
-    patchOne xs_ (DeleteAt i)     = fromMaybe xs_ (Array.deleteAt i xs)
-    patchOne xs_ (ModifyAt i da)  = fromMaybe xs_ (Array.modifyAt i (_ `patch` da) xs)
+    patchOne xs_ (InsertAt i x)   = fromMaybe xs_ (Array.insertAt i x xs_)
+    patchOne xs_ (DeleteAt i)     = fromMaybe xs_ (Array.deleteAt i xs_)
+    patchOne xs_ (ModifyAt i da)  = fromMaybe xs_ (Array.modifyAt i (_ `patch` da) xs_)
 
 insertAt :: forall a da. Patch a da => Int -> a -> Change (WrappedArray a)
 insertAt i v = toChange [InsertAt i v]
