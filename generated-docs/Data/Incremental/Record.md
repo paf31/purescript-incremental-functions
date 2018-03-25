@@ -54,4 +54,12 @@ PatchRL () Nil () Nil
 (IsSymbol l, Patch a m, PatchRL r1 rl d1 dl, RowCons l a r1 r2, RowCons l m d1 d2, RowLacks l r1, RowLacks l r2, RowLacks l d1, RowLacks l d2) => PatchRL r2 (Cons l a rl) d2 (Cons l m dl)
 ```
 
+#### `get`
+
+``` purescript
+get :: forall l a da r rl rest1 rest2 d dl. IsSymbol l => RowCons l a rest1 r => RowCons l da rest2 d => RowToList r rl => RowToList d dl => PatchRL r rl d dl => Patch a da => SProxy l -> Jet (WrappedRecord r) -> Jet a
+```
+
+An incremental property accessor function
+
 

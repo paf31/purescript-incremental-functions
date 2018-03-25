@@ -2,10 +2,10 @@ module Data.Incremental.Record where
 
 import Prelude
 
-import Data.Incremental (class Patch, patch)
+import Data.Incremental (class Patch, Jet, fromChange, patch, toChange)
 import Data.Monoid (class Monoid, mempty)
-import Data.Newtype (class Newtype)
-import Data.Record (delete, get, insert)
+import Data.Newtype (class Newtype, unwrap)
+import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Type.Row (class RowLacks, class RowToList, Cons, Nil, RLProxy(..), kind RowList)
 
@@ -34,14 +34,14 @@ instance semigroupRLCons
        )
     => SemigroupRL (Cons l a rl) r2 where
   appendRL _ x y =
-      insert l
-        (append (get l x) (get l y))
+      Record.insert l
+        (append (Record.get l x) (Record.get l y))
         rest
     where
       l = SProxy :: SProxy l
 
       rest :: Record r1
-      rest = appendRL (RLProxy :: RLProxy rl) (delete l x) (delete l y)
+      rest = appendRL (RLProxy :: RLProxy rl) (Record.delete l x) (Record.delete l y)
 
 instance monoidRecord
     :: (RowToList r rl, MonoidRL rl r)
@@ -64,7 +64,7 @@ instance monoidRLCons
        )
     => MonoidRL (Cons l a rl) r2 where
   memptyRL _ =
-      insert l mempty rest
+      Record.insert l mempty rest
     where
       l = SProxy :: SProxy l
 
@@ -95,11 +95,29 @@ instance patchRLCons
        )
     => PatchRL r2 (Cons l a rl) d2 (Cons l m dl) where
   patchRL _ _ x y =
-      insert l
-        (patch (get l x) (get l y))
+      Record.insert l
+        (patch (Record.get l x) (Record.get l y))
         rest
     where
       l = SProxy :: SProxy l
 
       rest :: Record r1
-      rest = patchRL (RLProxy :: RLProxy rl) (RLProxy :: RLProxy dl) (delete l x) (delete l y)
+      rest = patchRL (RLProxy :: RLProxy rl) (RLProxy :: RLProxy dl) (Record.delete l x) (Record.delete l y)
+
+-- | An incremental property accessor function
+get
+  :: forall l a da r rl rest1 rest2 d dl
+   . IsSymbol l
+  => RowCons l a rest1 r
+  => RowCons l da rest2 d
+  => RowToList r rl
+  => RowToList d dl
+  => PatchRL r rl d dl
+  => Patch a da
+  => SProxy l
+  -> Jet (WrappedRecord r)
+  -> Jet a
+get l { position, velocity } =
+  { position: Record.get l (unwrap position)
+  , velocity: toChange (Record.get l (unwrap (fromChange velocity)))
+  }
