@@ -62,4 +62,12 @@ get :: forall l a da r rl rest1 rest2 d dl. IsSymbol l => RowCons l a rest1 r =>
 
 An incremental property accessor function
 
+#### `update`
+
+``` purescript
+update :: forall l a da r rl rest1 rest2 d dl. IsSymbol l => RowCons l a rest1 r => RowCons l da rest2 d => RowToList r rl => RowToList d dl => PatchRL r rl d dl => Patch a da => SProxy l -> Change a -> Change (WrappedRecord r)
+```
+
+An incremental property update function
+
 

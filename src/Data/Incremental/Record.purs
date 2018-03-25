@@ -2,9 +2,9 @@ module Data.Incremental.Record where
 
 import Prelude
 
-import Data.Incremental (class Patch, Jet, fromChange, patch, toChange)
+import Data.Incremental (class Patch, Change, Jet, fromChange, patch, toChange)
 import Data.Monoid (class Monoid, mempty)
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Type.Row (class RowLacks, class RowToList, Cons, Nil, RLProxy(..), kind RowList)
@@ -121,3 +121,18 @@ get l { position, velocity } =
   { position: Record.get l (unwrap position)
   , velocity: toChange (Record.get l (unwrap (fromChange velocity)))
   }
+
+-- | An incremental property update function
+update
+  :: forall l a da r rl rest1 rest2 d dl
+   . IsSymbol l
+  => RowCons l a rest1 r
+  => RowCons l da rest2 d
+  => RowToList r rl
+  => RowToList d dl
+  => PatchRL r rl d dl
+  => Patch a da
+  => SProxy l
+  -> Change a
+  -> Change (WrappedRecord r)
+update l c = toChange (wrap (Record.set l (fromChange c) (unwrap (mempty :: WrappedRecord d))))
