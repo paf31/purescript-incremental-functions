@@ -13,9 +13,31 @@ A change structure for `Map` which tracks changes for each key.
 
 ##### Instances
 ``` purescript
+(Eq k, Eq v) => Eq (WrappedMap k v)
 (Show k, Show v) => Show (WrappedMap k v)
 Newtype (WrappedMap k v) _
-(Ord k, ChangeStructure v dv) => ChangeStructure (WrappedMap k v) (MapChanges k v dv)
+(Ord k, Patch v dv) => Patch (WrappedMap k v) (MapChanges k v dv)
+(Ord k, Diff v dv) => Diff (WrappedMap k v) (MapChanges k v dv)
+```
+
+#### `MapChanges`
+
+``` purescript
+newtype MapChanges k v dv
+  = MapChanges (Map k (MapChange v dv))
+```
+
+A change for each possible key.
+
+##### Instances
+``` purescript
+(Eq k, Eq v, Eq dv) => Eq (MapChanges k v dv)
+Newtype (MapChanges k v dv) _
+(Show k, Show v, Show dv) => Show (MapChanges k v dv)
+(Ord k, Patch v dv) => Semigroup (MapChanges k v dv)
+(Ord k, Patch v dv) => Monoid (MapChanges k v dv)
+(Ord k, Patch v dv) => Patch (WrappedMap k v) (MapChanges k v dv)
+(Ord k, Diff v dv) => Diff (WrappedMap k v) (MapChanges k v dv)
 ```
 
 #### `MapChange`
@@ -31,41 +53,42 @@ A change for a single key is an addition, removal, or update.
 
 ##### Instances
 ``` purescript
+(Eq v, Eq dv) => Eq (MapChange v dv)
 (Show v, Show dv) => Show (MapChange v dv)
 ```
 
-#### `MapChanges`
+#### `insert`
 
 ``` purescript
-newtype MapChanges k v dv
-  = MapChanges (Map k (MapChange v dv))
+insert :: forall k v dv. Ord k => Patch v dv => k -> v -> Change (WrappedMap k v)
 ```
 
-A change for each possible key.
+#### `remove`
 
-##### Instances
 ``` purescript
-Newtype (MapChanges k v dv) _
-(Show k, Show v, Show dv) => Show (MapChanges k v dv)
-(Ord k, ChangeStructure v dv) => Semigroup (MapChanges k v dv)
-(Ord k, ChangeStructure v dv) => Monoid (MapChanges k v dv)
-(Ord k, ChangeStructure v dv) => ChangeStructure (WrappedMap k v) (MapChanges k v dv)
+remove :: forall k v dv. Ord k => Patch v dv => k -> Change (WrappedMap k v)
 ```
 
-#### `key`
+#### `updateAt`
 
 ``` purescript
-key :: forall k v dv. Ord k => ChangeStructure v dv => k -> D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (WrappedMap k v)
 ```
 
-Update a single key by applying a function.
-
-#### `each`
+#### `map`
 
 ``` purescript
-each :: forall k v dv. Ord k => ChangeStructure v dv => D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+map :: forall k v dv. Ord k => Patch v dv => (Jet v -> Jet v) -> Jet (WrappedMap k v) -> Jet (WrappedMap k v)
 ```
 
 Update every key by applying a function.
+
+#### `modifyAt`
+
+``` purescript
+modifyAt :: forall k v dv. Ord k => Patch v dv => k -> (Jet v -> Jet v) -> Jet (WrappedMap k v) -> Jet (WrappedMap k v)
+```
+
+Update a single key by applying a function.
 
 
