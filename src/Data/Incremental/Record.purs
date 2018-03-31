@@ -1,4 +1,10 @@
-module Data.Incremental.Record where
+module Data.Incremental.Record
+  ( IRecord(..)
+  , get
+  , update
+  , class PatchRL
+  , patchRL
+  ) where
 
 import Prelude
 
@@ -9,14 +15,14 @@ import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Type.Row (class RowLacks, class RowToList, Cons, Nil, RLProxy(..), kind RowList)
 
-newtype WrappedRecord r = WrappedRecord (Record r)
+newtype IRecord r = IRecord (Record r)
 
-derive instance newtypeWrappedRecord :: Newtype (WrappedRecord a) _
+derive instance newtypeIRecord :: Newtype (IRecord a) _
 
 instance semigroupRecord
     :: (RowToList r rl, SemigroupRL rl r)
-    => Semigroup (WrappedRecord r) where
-  append (WrappedRecord x) (WrappedRecord y) = WrappedRecord (appendRL (RLProxy :: RLProxy rl) x y)
+    => Semigroup (IRecord r) where
+  append (IRecord x) (IRecord y) = IRecord (appendRL (RLProxy :: RLProxy rl) x y)
 
 class SemigroupRL (rl :: RowList) r | rl -> r where
   appendRL :: RLProxy rl -> Record r -> Record r -> Record r
@@ -30,7 +36,6 @@ instance semigroupRLCons
        , SemigroupRL rl r1
        , RowCons l a r1 r2
        , RowLacks l r1
-       , RowLacks l r2
        )
     => SemigroupRL (Cons l a rl) r2 where
   appendRL _ x y =
@@ -45,8 +50,8 @@ instance semigroupRLCons
 
 instance monoidRecord
     :: (RowToList r rl, MonoidRL rl r)
-    => Monoid (WrappedRecord r) where
-  mempty = WrappedRecord (memptyRL (RLProxy :: RLProxy rl))
+    => Monoid (IRecord r) where
+  mempty = IRecord (memptyRL (RLProxy :: RLProxy rl))
 
 class SemigroupRL rl r <= MonoidRL (rl :: RowList) r | rl -> r where
   memptyRL :: RLProxy rl -> Record r
@@ -60,7 +65,6 @@ instance monoidRLCons
        , MonoidRL rl r1
        , RowCons l a r1 r2
        , RowLacks l r1
-       , RowLacks l r2
        )
     => MonoidRL (Cons l a rl) r2 where
   memptyRL _ =
@@ -73,8 +77,8 @@ instance monoidRLCons
 
 instance patchRecord
     :: (RowToList r rl, RowToList d dl, MonoidRL dl d, PatchRL r rl d dl)
-    => Patch (WrappedRecord r) (WrappedRecord d) where
-  patch (WrappedRecord r) (WrappedRecord d) = WrappedRecord (patchRL (RLProxy :: RLProxy rl) (RLProxy :: RLProxy dl) r d)
+    => Patch (IRecord r) (IRecord d) where
+  patch (IRecord r) (IRecord d) = IRecord (patchRL (RLProxy :: RLProxy rl) (RLProxy :: RLProxy dl) r d)
 
 class MonoidRL dl d <= PatchRL r (rl :: RowList) d (dl :: RowList) | rl -> r, dl -> d, rl -> dl where
   patchRL :: RLProxy rl -> RLProxy dl -> Record r -> Record d -> Record r
@@ -89,9 +93,7 @@ instance patchRLCons
        , RowCons l a r1 r2
        , RowCons l m d1 d2
        , RowLacks l r1
-       , RowLacks l r2
        , RowLacks l d1
-       , RowLacks l d2
        )
     => PatchRL r2 (Cons l a rl) d2 (Cons l m dl) where
   patchRL _ _ x y =
@@ -115,7 +117,7 @@ get
   => PatchRL r rl d dl
   => Patch a da
   => SProxy l
-  -> Jet (WrappedRecord r)
+  -> Jet (IRecord r)
   -> Jet a
 get l { position, velocity } =
   { position: Record.get l (unwrap position)
@@ -134,5 +136,5 @@ update
   => Patch a da
   => SProxy l
   -> Change a
-  -> Change (WrappedRecord r)
-update l c = toChange (wrap (Record.set l (fromChange c) (unwrap (mempty :: WrappedRecord d))))
+  -> Change (IRecord r)
+update l c = toChange (wrap (Record.set l (fromChange c) (unwrap (mempty :: IRecord d))))

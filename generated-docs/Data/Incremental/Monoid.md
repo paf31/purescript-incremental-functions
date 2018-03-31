@@ -1,29 +1,56 @@
 ## Module Data.Incremental.Monoid
 
-#### `WrappedMonoid`
+#### `Left`
 
 ``` purescript
-newtype WrappedMonoid a
-  = WrappedMonoid a
+newtype Left a
+  = Left a
+```
+
+A change structure for any monoid, with the `Dual` monoid acting by
+appending on the left.
+
+##### Instances
+``` purescript
+(Eq a) => Eq (Left a)
+(Ord a) => Ord (Left a)
+Newtype (Left a) _
+(Show a) => Show (Left a)
+(Monoid a) => Patch (Left a) (Dual a)
+```
+
+#### `appendLeft`
+
+``` purescript
+appendLeft :: forall a. Monoid a => a -> Change (Left a)
+```
+
+Change by appending a value on the left.
+
+#### `Right`
+
+``` purescript
+newtype Right a
+  = Right a
 ```
 
 A change structure for any monoid, acting on itself by appending on the right.
 
 ##### Instances
 ``` purescript
-(Semigroup a) => Semigroup (WrappedMonoid a)
-(Monoid a) => Monoid (WrappedMonoid a)
-(Eq a) => Eq (WrappedMonoid a)
-(Ord a) => Ord (WrappedMonoid a)
-Newtype (WrappedMonoid a) _
-(Show a) => Show (WrappedMonoid a)
-(Monoid a) => Patch (WrappedMonoid a) (WrappedMonoid a)
+(Semigroup a) => Semigroup (Right a)
+(Monoid a) => Monoid (Right a)
+(Eq a) => Eq (Right a)
+(Ord a) => Ord (Right a)
+Newtype (Right a) _
+(Show a) => Show (Right a)
+(Monoid a) => Patch (Right a) (Right a)
 ```
 
-#### `appending`
+#### `appendRight`
 
 ``` purescript
-appending :: forall a. Monoid a => a -> Change (WrappedMonoid a)
+appendRight :: forall a. Monoid a => a -> Change (Right a)
 ```
 
 Change by appending a value on the right.

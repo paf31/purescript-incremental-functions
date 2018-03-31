@@ -1,7 +1,7 @@
 -- | A change structure for maps, and helper functions.
 
 module Data.Incremental.Map
-  ( WrappedMap(..)
+  ( IMap(..)
   , MapChanges(..)
   , MapChange(..)
   , insert
@@ -33,14 +33,14 @@ align xs ys =
     (Prelude.map That ys)
 
 -- | A change structure for `Map` which tracks changes for each key.
-newtype WrappedMap k v = WrappedMap (Map k v)
+newtype IMap k v = IMap (Map k v)
 
-derive instance eqWrappedMap :: (Eq k, Eq v) => Eq (WrappedMap k v)
+derive instance eqIMap :: (Eq k, Eq v) => Eq (IMap k v)
 
-instance showWrappedMap :: (Show k, Show v) => Show (WrappedMap k v) where
-  show (WrappedMap m) = "(WrappedMap " <> show m <> ")"
+instance showIMap :: (Show k, Show v) => Show (IMap k v) where
+  show (IMap m) = "(IMap " <> show m <> ")"
 
-derive instance newtypeWrappedMap :: Newtype (WrappedMap k v) _
+derive instance newtypeIMap :: Newtype (IMap k v) _
 
 -- | A change for a single key is an addition, removal, or update.
 data MapChange v dv
@@ -75,11 +75,11 @@ instance semigroupMapChanges :: (Ord k, Patch v dv) => Semigroup (MapChanges k v
 instance monoidMapChanges :: (Ord k, Patch v dv) => Monoid (MapChanges k v dv) where
   mempty = MapChanges Map.empty
 
-instance patchWrappedMap
+instance patchIMap
     :: (Ord k, Patch v dv)
-    => Patch (WrappedMap k v) (MapChanges k v dv) where
-  patch (WrappedMap m1) (MapChanges m2) =
-    WrappedMap <<< Map.fromFoldable <<< mapMaybe (\(Tuple k v) -> Tuple k <$> v) <<< Map.toUnfoldable $ align m1 m2 <#>
+    => Patch (IMap k v) (MapChanges k v dv) where
+  patch (IMap m1) (MapChanges m2) =
+    IMap <<< Map.fromFoldable <<< mapMaybe (\(Tuple k v) -> Tuple k <$> v) <<< Map.toUnfoldable $ align m1 m2 <#>
       case _ of
         This x -> Just x
         That (Add v) -> Just v
@@ -87,22 +87,22 @@ instance patchWrappedMap
         Both v (Update dv) -> Just (patch v dv)
         _ -> Nothing
 
-instance diffWrappedMap
+instance diffIMap
     :: (Ord k, Diff v dv)
-    => Diff (WrappedMap k v) (MapChanges k v dv) where
-  diff (WrappedMap m1) (WrappedMap m2) = MapChanges $ align m1 m2 <#>
+    => Diff (IMap k v) (MapChanges k v dv) where
+  diff (IMap m1) (IMap m2) = MapChanges $ align m1 m2 <#>
     case _ of
       This x -> Remove
       That y -> Add y
       Both x y -> Update (diff x y)
 
-insert :: forall k v dv. Ord k => Patch v dv => k -> v -> Change (WrappedMap k v)
+insert :: forall k v dv. Ord k => Patch v dv => k -> v -> Change (IMap k v)
 insert k v = toChange (wrap (Map.singleton k (Add v)))
 
-remove :: forall k v dv. Ord k => Patch v dv => k -> Change (WrappedMap k v)
+remove :: forall k v dv. Ord k => Patch v dv => k -> Change (IMap k v)
 remove k = toChange (wrap (Map.singleton k Remove))
 
-updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (WrappedMap k v)
+updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (IMap k v)
 updateAt k c = toChange (wrap (Map.singleton k (Update (fromChange c))))
 
 -- | Update a single key by applying a function.
@@ -112,10 +112,10 @@ modifyAt
   => Patch v dv
   => k
   -> (Jet v -> Jet v)
-  -> Jet (WrappedMap k v)
-  -> Jet (WrappedMap k v)
-modifyAt k f { position: WrappedMap m, velocity: dm } =
-    { position: WrappedMap (Map.update (Just <<< _.position <<< f <<< constant) k m)
+  -> Jet (IMap k v)
+  -> Jet (IMap k v)
+modifyAt k f { position: IMap m, velocity: dm } =
+    { position: IMap (Map.update (Just <<< _.position <<< f <<< constant) k m)
     , velocity: toChange (MapChanges (Map.update (Just <<< go (Map.lookup k m)) k (unwrap (fromChange dm))))
     }
   where
@@ -130,10 +130,10 @@ map
    . Ord k
   => Patch v dv
   => (Jet v -> Jet v)
-  -> Jet (WrappedMap k v)
-  -> Jet (WrappedMap k v)
-map f { position: WrappedMap m, velocity: dm } =
-    { position: WrappedMap (Prelude.map (_.position <<< f <<< constant) m)
+  -> Jet (IMap k v)
+  -> Jet (IMap k v)
+map f { position: IMap m, velocity: dm } =
+    { position: IMap (Prelude.map (_.position <<< f <<< constant) m)
     , velocity: toChange (MapChanges (go <$> align m (unwrap (fromChange dm))))
     }
   where

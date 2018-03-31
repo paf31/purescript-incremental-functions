@@ -1,7 +1,7 @@
 module Data.Incremental.Eq
-  ( WrappedEq(..)
+  ( Atomic(..)
   , replace
-  , mapEq
+  , mapAtomic
   ) where
 
 import Prelude
@@ -12,34 +12,35 @@ import Data.Maybe.Last (Last(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
 
 -- | A change structure for any type with equality.
-newtype WrappedEq a = WrappedEq a
+newtype Atomic a = Atomic a
 
-derive instance eqWrappedEq :: Eq a => Eq (WrappedEq a)
-derive instance ordWrappedEq :: Ord a => Ord (WrappedEq a)
-derive instance newtypeWrappedEq :: Newtype (WrappedEq a) _
+derive instance eqAtomic :: Eq a => Eq (Atomic a)
+derive instance ordAtomic :: Ord a => Ord (Atomic a)
+derive instance newtypeAtomic :: Newtype (Atomic a) _
 
-instance showWrappedEq :: Show a => Show (WrappedEq a) where
-  show (WrappedEq a) = "(WrappedEq " <> show a <> ")"
+instance showAtomic :: Show a => Show (Atomic a) where
+  show (Atomic a) = "(Atomic " <> show a <> ")"
 
-instance patchWrappedEq :: Patch (WrappedEq a) (Last a) where
+instance patchAtomic :: Patch (Atomic a) (Last a) where
   patch x (Last Nothing) = x
-  patch _ (Last (Just y)) = WrappedEq y
+  patch _ (Last (Just y)) = Atomic y
 
-instance diffWrappedEq :: Eq a => Diff (WrappedEq a) (Last a) where
-  diff (WrappedEq x) (WrappedEq y)
+instance diffAtomic :: Eq a => Diff (Atomic a) (Last a) where
+  diff (Atomic x) (Atomic y)
     | x == y = Last Nothing
     | otherwise = Last (Just y)
 
 -- | Change by replacing the current value.
-replace :: forall a. a -> Change (WrappedEq a)
+replace :: forall a. a -> Change (Atomic a)
 replace a = toChange (Last (Just a))
 
-mapEq
+-- | Change an `Atomic` value using a regular function.
+mapAtomic
   :: forall a b
    . (a -> b)
-  -> Jet (WrappedEq a)
-  -> Jet (WrappedEq b)
-mapEq f { position, velocity } =
+  -> Jet (Atomic a)
+  -> Jet (Atomic b)
+mapAtomic f { position, velocity } =
     { position: wrap (f (unwrap position))
     , velocity: toChange (map f (fromChange velocity))
     }
