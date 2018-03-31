@@ -5,7 +5,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Data.Incremental (Jet, constant, fromChange)
 import Data.Incremental.Array as IArray
-import Data.Incremental.Eq (Atomic, mapAtomic, replace)
+import Data.Incremental.Eq (Atomic(..), mapAtomic, replace)
 import Data.Incremental.Map as IMap
 import Data.Incremental.Record as IRecord
 import Data.Map as Map
@@ -66,3 +66,11 @@ main = do
              }
   assert (unwrap t7.position == 0)
   assert (fromChange t7.velocity == fromChange (replace 42))
+
+  let t8 = IMap.size $ IMap.zip
+             (constant (wrap (Map.fromFoldable [Tuple 1 (Atomic 1), Tuple 2 (Atomic 2)])))
+             { position: wrap (Map.fromFoldable [Tuple 1 (Atomic 'a'), Tuple 2 (Atomic 'b')])
+             , velocity: IMap.remove 1
+             }
+  assert (unwrap t8.position == 2)
+  assert (fromChange t8.velocity == Last (pure 1))

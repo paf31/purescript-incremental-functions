@@ -9,11 +9,17 @@ module Data.Incremental.Map
   , updateAt
   , map
   , modifyAt
+  , size
+  , zip
   ) where
 
 import Prelude hiding (map)
 
+import Data.Bifoldable (biany)
+import Data.Filterable (filterMap)
+import Data.Foldable (sum)
 import Data.Incremental (class Diff, class Patch, Change, Jet, constant, diff, fromChange, patch, toChange)
+import Data.Incremental.Eq (Atomic)
 import Data.List (mapMaybe)
 import Data.Map (Map)
 import Data.Map as Map
@@ -24,13 +30,6 @@ import Data.These (These(..))
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
-
-align :: forall k a b. Ord k => Map k a -> Map k b -> Map k (These a b)
-align xs ys =
-  Map.unionWith
-    (unsafePartial \(This x) (That y) -> Both x y)
-    (Prelude.map This xs)
-    (Prelude.map That ys)
 
 -- | A change structure for `Map` which tracks changes for each key.
 newtype IMap k v = IMap (Map k v)
@@ -126,21 +125,87 @@ modifyAt k f { position: IMap m, velocity: dm } =
 
 -- | Update every key by applying a function.
 map
-  :: forall k v dv
+  :: forall k a da b db
    . Ord k
-  => Patch v dv
-  => (Jet v -> Jet v)
-  -> Jet (IMap k v)
-  -> Jet (IMap k v)
+  => Patch a da
+  => Patch b db
+  => (Jet a -> Jet b)
+  -> Jet (IMap k a)
+  -> Jet (IMap k b)
 map f { position: IMap m, velocity: dm } =
     { position: IMap (Prelude.map (_.position <<< f <<< constant) m)
     , velocity: toChange (MapChanges (go <$> align m (unwrap (fromChange dm))))
     }
   where
+    go :: These a (MapChange a da) -> MapChange b db
     go (This v)             = Update (fromChange j.velocity) where j = f (constant v)
-    go (That (Add v))       = Add (patch v (fromChange j.velocity)) where j = f (constant v)
-    go (That Remove)        = Remove
-    go (That (Update dv))   = Update dv
-    go (Both _ (Add v))     = Add (patch v (fromChange j.velocity)) where j = f (constant v)
+    go (That (Add v))       = Add (patch j.position (fromChange j.velocity)) where j = f (constant v)
     go (Both _ Remove)      = Remove
     go (Both v (Update dv)) = Update (fromChange j.velocity) where j = f { position: v, velocity: toChange dv }
+    go _                    = Update mempty
+
+-- | Compute the size of an `IMap`, incrementally.
+size
+  :: forall k a da
+   . Ord k
+  => Patch a da
+  => Jet (IMap k a)
+  -> Jet (Atomic Int)
+size { position: IMap m, velocity: dm } =
+    { position: wrap cur
+    , velocity: toChange (pure (cur + sum (Prelude.map sizeOf (align m (unwrap (fromChange dm))))))
+    }
+  where
+    cur = Map.size m
+
+    sizeOf :: These a (MapChange a da) -> Int
+    sizeOf (Both _ Remove) = -1
+    sizeOf (That (Add _)) = 1
+    sizeOf _ = 0
+
+-- | Zip two maps, keeping those keys which are common to _both_ input maps.
+zip
+  :: forall k a da b db
+   . Ord k
+  => Patch a da
+  => Patch b db
+  => Jet (IMap k a)
+  -> Jet (IMap k b)
+  -> Jet (IMap k (Tuple a b))
+zip { position: IMap m1, velocity: dm1 } { position: IMap m2, velocity: dm2 } =
+  let z = zipMap m1 m2
+
+      isRemove :: forall x dx. MapChange x dx -> Boolean
+      isRemove Remove = true
+      isRemove _ = false
+
+      go :: These (Tuple a b) (These (MapChange a da) (MapChange b db))
+         -> Maybe (MapChange (Tuple a b) (Tuple da db))
+      go (That (Both (Add a) (Add b)))           = Just (Add (Tuple a b))
+      go (Both _ e) | biany isRemove isRemove e  = Just Remove
+      go (Both _ (This (Update da)))             = Just (Update (Tuple da mempty))
+      go (Both _ (That (Update db)))             = Just (Update (Tuple mempty db))
+      go (Both _ (Both (Update da) (Update db))) = Just (Update (Tuple da db))
+      go _                                       = Nothing
+   in { position: IMap z
+      , velocity: toChange (MapChanges (filterMap go (z `align` (unwrap (fromChange dm1) `align` unwrap (fromChange dm2)))))
+      }
+
+-- Helpers
+
+align :: forall k a b. Ord k => Map k a -> Map k b -> Map k (These a b)
+align xs ys =
+  Map.unionWith
+    (unsafePartial \(This x) (That y) -> Both x y)
+    (Prelude.map This xs)
+    (Prelude.map That ys)
+
+zipMap
+  :: forall k a b
+   . Ord k
+  => Map k a
+  -> Map k b
+  -> Map k (Tuple a b)
+zipMap m1 m2 = filterMap go (align m1 m2) where
+  go (Both a b) = Just (Tuple a b)
+  go _ = Nothing

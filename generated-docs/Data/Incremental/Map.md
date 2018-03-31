@@ -78,7 +78,7 @@ updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (IMap 
 #### `map`
 
 ``` purescript
-map :: forall k v dv. Ord k => Patch v dv => (Jet v -> Jet v) -> Jet (IMap k v) -> Jet (IMap k v)
+map :: forall k a da b db. Ord k => Patch a da => Patch b db => (Jet a -> Jet b) -> Jet (IMap k a) -> Jet (IMap k b)
 ```
 
 Update every key by applying a function.
@@ -90,5 +90,21 @@ modifyAt :: forall k v dv. Ord k => Patch v dv => k -> (Jet v -> Jet v) -> Jet (
 ```
 
 Update a single key by applying a function.
+
+#### `size`
+
+``` purescript
+size :: forall k a da. Ord k => Patch a da => Jet (IMap k a) -> Jet (Atomic Int)
+```
+
+Compute the size of an `IMap`, incrementally.
+
+#### `zip`
+
+``` purescript
+zip :: forall k a da b db. Ord k => Patch a da => Patch b db => Jet (IMap k a) -> Jet (IMap k b) -> Jet (IMap k (Tuple a b))
+```
+
+Zip two maps, keeping those keys which are common to _both_ input maps.
 
 
