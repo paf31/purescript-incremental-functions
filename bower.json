@@ -13,10 +13,14 @@
   },
   "dependencies": {
     "purescript-maps": "^3.0.0",
-    "purescript-these": "^3.0.0"
+    "purescript-these": "^3.0.0",
+    "purescript-filterable": "^2.4.1",
+    "purescript-typelevel-prelude": "^2.6.0",
+    "purescript-record": "^0.2.6"
   },
   "devDependencies": {
     "purescript-console": "^3.0.0",
-    "purescript-psci-support": "^3.0.0"
+    "purescript-psci-support": "^3.0.0",
+    "purescript-assert": "^3.0.0"
   }
 }

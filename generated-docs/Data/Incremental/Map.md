@@ -2,20 +2,42 @@
 
 A change structure for maps, and helper functions.
 
-#### `WrappedMap`
+#### `IMap`
 
 ``` purescript
-newtype WrappedMap k v
-  = WrappedMap (Map k v)
+newtype IMap k v
+  = IMap (Map k v)
 ```
 
 A change structure for `Map` which tracks changes for each key.
 
 ##### Instances
 ``` purescript
-(Show k, Show v) => Show (WrappedMap k v)
-Newtype (WrappedMap k v) _
-(Ord k, ChangeStructure v dv) => ChangeStructure (WrappedMap k v) (MapChanges k v dv)
+(Eq k, Eq v) => Eq (IMap k v)
+(Show k, Show v) => Show (IMap k v)
+Newtype (IMap k v) _
+(Ord k, Patch v dv) => Patch (IMap k v) (MapChanges k v dv)
+(Ord k, Diff v dv) => Diff (IMap k v) (MapChanges k v dv)
+```
+
+#### `MapChanges`
+
+``` purescript
+newtype MapChanges k v dv
+  = MapChanges (Map k (MapChange v dv))
+```
+
+A change for each possible key.
+
+##### Instances
+``` purescript
+(Eq k, Eq v, Eq dv) => Eq (MapChanges k v dv)
+Newtype (MapChanges k v dv) _
+(Show k, Show v, Show dv) => Show (MapChanges k v dv)
+(Ord k, Patch v dv) => Semigroup (MapChanges k v dv)
+(Ord k, Patch v dv) => Monoid (MapChanges k v dv)
+(Ord k, Patch v dv) => Patch (IMap k v) (MapChanges k v dv)
+(Ord k, Diff v dv) => Diff (IMap k v) (MapChanges k v dv)
 ```
 
 #### `MapChange`
@@ -31,41 +53,58 @@ A change for a single key is an addition, removal, or update.
 
 ##### Instances
 ``` purescript
+(Eq v, Eq dv) => Eq (MapChange v dv)
 (Show v, Show dv) => Show (MapChange v dv)
 ```
 
-#### `MapChanges`
+#### `insert`
 
 ``` purescript
-newtype MapChanges k v dv
-  = MapChanges (Map k (MapChange v dv))
+insert :: forall k v dv. Ord k => Patch v dv => k -> v -> Change (IMap k v)
 ```
 
-A change for each possible key.
+#### `remove`
 
-##### Instances
 ``` purescript
-Newtype (MapChanges k v dv) _
-(Show k, Show v, Show dv) => Show (MapChanges k v dv)
-(Ord k, ChangeStructure v dv) => Semigroup (MapChanges k v dv)
-(Ord k, ChangeStructure v dv) => Monoid (MapChanges k v dv)
-(Ord k, ChangeStructure v dv) => ChangeStructure (WrappedMap k v) (MapChanges k v dv)
+remove :: forall k v dv. Ord k => Patch v dv => k -> Change (IMap k v)
 ```
 
-#### `key`
+#### `updateAt`
 
 ``` purescript
-key :: forall k v dv. Ord k => ChangeStructure v dv => k -> D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (IMap k v)
+```
+
+#### `map`
+
+``` purescript
+map :: forall k a da b db. Ord k => Patch a da => Patch b db => (Jet a -> Jet b) -> Jet (IMap k a) -> Jet (IMap k b)
+```
+
+Update every key by applying a function.
+
+#### `modifyAt`
+
+``` purescript
+modifyAt :: forall k v dv. Ord k => Patch v dv => k -> (Jet v -> Jet v) -> Jet (IMap k v) -> Jet (IMap k v)
 ```
 
 Update a single key by applying a function.
 
-#### `each`
+#### `size`
 
 ``` purescript
-each :: forall k v dv. Ord k => ChangeStructure v dv => D1 ((v -> v) -> WrappedMap k v -> WrappedMap k v)
+size :: forall k a da. Ord k => Patch a da => Jet (IMap k a) -> Jet (Atomic Int)
 ```
 
-Update every key by applying a function.
+Compute the size of an `IMap`, incrementally.
+
+#### `zip`
+
+``` purescript
+zip :: forall k a da b db. Ord k => Patch a da => Patch b db => Jet (IMap k a) -> Jet (IMap k b) -> Jet (IMap k (Tuple a b))
+```
+
+Zip two maps, keeping those keys which are common to _both_ input maps.
 
 

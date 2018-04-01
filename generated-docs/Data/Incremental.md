@@ -8,43 +8,32 @@ Incremental computation, based on
 This module also defines a HOAS-style interface for working with
 function changes.
 
-#### `ChangeStructure`
+#### `Patch`
 
 ``` purescript
-class (Monoid d) <= ChangeStructure a d | a -> d where
-  diff :: a -> a -> d
+class (Monoid d) <= Patch a d | a -> d where
   patch :: a -> d -> a
 ```
 
-A "change structure" on `a` consists of a monoid `d` of changes, together with
-diff and patch functions.
+The monoid `d` of changes acts on values of type `a`.
 
 ##### Instances
 ``` purescript
-(ChangeStructure a da, ChangeStructure b db) => ChangeStructure (a -> b) (FunctionChange a da db)
-ChangeStructure Unit Unit
-(ChangeStructure a da, ChangeStructure b db) => ChangeStructure (Tuple a b) (Tuple da db)
+Patch Unit Unit
+(Patch a da, Patch b db) => Patch (Tuple a b) (Tuple da db)
 ```
 
-#### `FunctionChange`
+#### `Diff`
 
 ``` purescript
-newtype FunctionChange a da db
+class (Patch a d) <= Diff a d | a -> d where
+  diff :: a -> a -> d
 ```
-
-A change structure for functions
 
 ##### Instances
 ``` purescript
-(Semigroup db) => Semigroup (FunctionChange a da db)
-(Monoid db) => Monoid (FunctionChange a da db)
-(ChangeStructure a da, ChangeStructure b db) => ChangeStructure (a -> b) (FunctionChange a da db)
-```
-
-#### `runFunctionChange`
-
-``` purescript
-runFunctionChange :: forall a da db. FunctionChange a da db -> a -> da -> db
+Diff Unit Unit
+(Diff a da, Diff b db) => Diff (Tuple a b) (Tuple da db)
 ```
 
 #### `Change`
@@ -58,69 +47,51 @@ A type level function which maps a type to the type of its change structure.
 Uniqueness of instances makes the coercions `fromChange` and `toChange` safe,
 since the functional dependency makes the change structure type unique.
 
+##### Instances
+``` purescript
+(Patch a da, Semigroup da) => Semigroup (Change a)
+(Patch a da, Monoid da) => Monoid (Change a)
+```
+
 #### `fromChange`
 
 ``` purescript
-fromChange :: forall a da. ChangeStructure a da => Change a -> da
+fromChange :: forall a da. Patch a da => Change a -> da
 ```
 
 #### `toChange`
 
 ``` purescript
-toChange :: forall a da. ChangeStructure a da => da -> Change a
+toChange :: forall a da. Patch a da => da -> Change a
 ```
 
-#### `D1`
+#### `Jet`
 
 ``` purescript
-data D1 a
-  = D1 a (Change a)
+type Jet a = { position :: a, velocity :: Change a }
 ```
 
-A term paired with its rate of change.
+A value (`position`) paired with a change (`velocity`).
 
-We can think of these modified terms as conceptually similar to dual numbers.
+We can think of these modified terms as conceptually similar to dual
+numbers.
 
-#### `valueOf`
-
-``` purescript
-valueOf :: forall a. D1 a -> a
-```
-
-#### `changeOf`
-
-``` purescript
-changeOf :: forall a. D1 a -> Change a
-```
-
-#### `lam`
-
-``` purescript
-lam :: forall a b da db. ChangeStructure a da => ChangeStructure b db => (D1 a -> D1 b) -> D1 (a -> b)
-```
-
-Lambda abstraction
-
-#### `app`
-
-``` purescript
-app :: forall a b da db. ChangeStructure a da => ChangeStructure b db => D1 (a -> b) -> D1 a -> D1 b
-```
-
-Function application
+We can use functions of type `Jet a -> Jet b` as incremental
+functions from `a` to `b`, which gives us a HOAS-style DSL for working
+with jets.
 
 #### `constant`
 
 ``` purescript
-constant :: forall a da. ChangeStructure a da => a -> D1 a
+constant :: forall a da. Patch a da => a -> Jet a
 ```
 
 A constant term
 
-#### `applyPatch`
+#### `change`
 
 ``` purescript
-applyPatch :: forall a da. ChangeStructure a da => da -> D1 (a -> a)
+change :: forall a da. Patch a da => Change a -> Jet a -> Jet a
 ```
 
 Create a function which applies a patch to its input
