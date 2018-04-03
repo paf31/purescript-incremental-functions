@@ -1,7 +1,7 @@
 -- | Incremental computation, based on
 -- |
 -- | > "A Theory of Changes for Higher-Order Languages" by
--- | > Cai, Gairrusso, Rendel and Ostermann.
+-- | > Cai, Giarrusso, Rendel and Ostermann.
 -- |
 -- | This module also defines a HOAS-style interface for working with
 -- | function changes.
