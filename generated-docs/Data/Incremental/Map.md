@@ -75,6 +75,22 @@ remove :: forall k v dv. Ord k => Patch v dv => k -> Change (IMap k v)
 updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (IMap k v)
 ```
 
+#### `static`
+
+``` purescript
+static :: forall k v dv. Ord k => Patch v dv => Map k (Jet v) -> Jet (IMap k v)
+```
+
+Construct a map whose values can change but whose keys are fixed.
+
+#### `singleton`
+
+``` purescript
+singleton :: forall k v dv. Ord k => Patch v dv => k -> Jet v -> Jet (IMap k v)
+```
+
+Construct a map from a key/value pair.
+
 #### `map`
 
 ``` purescript

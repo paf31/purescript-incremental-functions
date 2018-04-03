@@ -7,6 +7,8 @@ module Data.Incremental.Map
   , insert
   , remove
   , updateAt
+  , static
+  , singleton
   , map
   , modifyAt
   , size
@@ -103,6 +105,22 @@ remove k = toChange (wrap (Map.singleton k Remove))
 
 updateAt :: forall k v dv. Ord k => Patch v dv => k -> Change v -> Change (IMap k v)
 updateAt k c = toChange (wrap (Map.singleton k (Update (fromChange c))))
+
+-- | Construct a map from a key/value pair.
+singleton :: forall k v dv. Ord k => Patch v dv => k -> Jet v -> Jet (IMap k v)
+singleton k v = static (Map.singleton k v)
+
+-- | Construct a map whose values can change but whose keys are fixed.
+static
+  :: forall k v dv
+   . Ord k
+  => Patch v dv
+  => Map.Map k (Jet v)
+  -> Jet (IMap k v)
+static xs =
+  { position: wrap (Prelude.map _.position xs)
+  , velocity: toChange (MapChanges (Prelude.map (Update <<< fromChange <<< _.velocity) xs))
+  }
 
 -- | Update a single key by applying a function.
 modifyAt

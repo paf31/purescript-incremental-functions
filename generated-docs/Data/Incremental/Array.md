@@ -55,6 +55,8 @@ modifyAt :: forall a da. Patch a da => Int -> Change a -> Change (IArray a)
 length :: forall a da. Patch a da => Jet (IArray a) -> Jet (Atomic Int)
 ```
 
+Compute the length of the array incrementally.
+
 #### `map`
 
 ``` purescript
@@ -62,6 +64,8 @@ map :: forall a b da db. Patch a da => Patch b db => (Jet a -> Jet b) -> Jet (IA
 ```
 
 Modify each array element by applying the specified function.
+
+_Note_: The function itself must not change over time.
 
 #### `singleton`
 

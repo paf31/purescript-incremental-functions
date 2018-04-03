@@ -12,7 +12,7 @@ module Data.Incremental.Array
 
 import Prelude hiding (map)
 
-import Data.Array (foldl, mapWithIndex, zipWith)
+import Data.Array (foldl, mapMaybe, mapWithIndex, null, (!!))
 import Data.Array as Array
 import Data.Foldable (foldMap)
 import Data.Incremental (class Patch, Change, Jet, constant, fromChange, patch, toChange)
@@ -81,6 +81,7 @@ static xs =
   , velocity: toChange (mapWithIndex (\i -> ModifyAt i <<< fromChange <<< _.velocity) xs)
   }
 
+-- | Compute the length of the array incrementally.
 length
   :: forall a da
    . Patch a da
@@ -92,13 +93,15 @@ length { position, velocity } =
     }
   where
     go (InsertAt _ _) = Additive 1
-    go (DeleteAt _) = Additive (-1)
+    go (DeleteAt _) | not (null (unwrap position)) = Additive (-1)
     go _ = mempty
 
     additiveToLast (Additive 0) = mempty
     additiveToLast (Additive n) = Last (Just (Array.length (unwrap position) + n))
 
 -- | Modify each array element by applying the specified function.
+-- |
+-- | _Note_: The function itself must not change over time.
 map
   :: forall a b da db
    . Patch a da
@@ -108,9 +111,11 @@ map
   -> Jet (IArray b)
 map f { position: IArray xs, velocity: dxs } =
     { position: IArray (Prelude.map (_.position <<< f <<< constant) xs)
-    , velocity: toChange (zipWith go xs (fromChange dxs))
+    , velocity: toChange (mapMaybe go (fromChange dxs))
     }
   where
-    go _ (InsertAt i a)   = InsertAt i (f (constant a)).position
-    go _ (DeleteAt i)     = DeleteAt i
-    go a (ModifyAt i da)  = ModifyAt i (fromChange j.velocity) where j = f { position: a, velocity: toChange da }
+    go (InsertAt i a)   = Just (InsertAt i (f (constant a)).position)
+    go (DeleteAt i)     = Just (DeleteAt i)
+    go (ModifyAt i da)  = (xs !! i) <#> \a ->
+      let j = f { position: a, velocity: toChange da }
+       in ModifyAt i (fromChange j.velocity)
