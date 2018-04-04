@@ -1,5 +1,5 @@
 {
-  "name": "purescript-incremental",
+  "name": "purescript-incremental-functions",
   "ignore": [
     "**/.*",
     "node_modules",
@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/paf31/purescript-incremental.git"
+    "url": "git://github.com/paf31/purescript-incremental-functions.git"
   },
   "dependencies": {
     "purescript-maps": "^3.0.0",

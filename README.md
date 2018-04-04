@@ -1,4 +1,4 @@
-# purescript-incremental
+# purescript-incremental-functions
 
 Incremental lambda calculus in the HOAS style, based on
 
