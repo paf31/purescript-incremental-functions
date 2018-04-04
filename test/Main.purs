@@ -3,7 +3,7 @@ module Test.Main where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Data.Incremental (Jet, constant, fromChange)
+import Data.Incremental (Jet, constant, fromChange, patch)
 import Data.Incremental.Array as IArray
 import Data.Incremental.Eq (Atomic(..), mapAtomic, replace)
 import Data.Incremental.Map as IMap
@@ -74,3 +74,21 @@ main = do
              }
   assert (unwrap t8.position == 2)
   assert (fromChange t8.velocity == Last (pure 1))
+
+  let t9 = IArray.withIndex
+             { position: wrap [Atomic 'a', Atomic 'b', Atomic 'c']
+             , velocity:
+                 IArray.insertAt 1 (Atomic 'x')
+                 <> IArray.deleteAt 2
+                 <> IArray.modifyAt 2 (replace 'y')
+             }
+  assert $ unwrap t9.position ==
+    [ Tuple (Atomic 0) (Atomic 'a')
+    , Tuple (Atomic 1) (Atomic 'b')
+    , Tuple (Atomic 2) (Atomic 'c')
+    ]
+  assert $ unwrap (patch t9.position (fromChange t9.velocity)) ==
+    [ Tuple (Atomic 0) (Atomic 'a')
+    , Tuple (Atomic 1) (Atomic 'x')
+    , Tuple (Atomic 2) (Atomic 'y')
+    ]

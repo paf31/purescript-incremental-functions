@@ -6,22 +6,26 @@ module Data.Incremental.Array
   , modifyAt
   , length
   , map
+  , mapWithIndex
   , singleton
   , static
+  , withIndex
   ) where
 
 import Prelude hiding (map)
 
-import Data.Array (foldl, mapMaybe, mapWithIndex, null, (!!))
+import Data.Array ((:), (!!))
 import Data.Array as Array
-import Data.Foldable (foldMap)
+import Data.Foldable (foldl, foldMap)
 import Data.Incremental (class Patch, Change, Jet, constant, fromChange, patch, toChange)
-import Data.Incremental.Eq (Atomic)
+import Data.Incremental.Eq (Atomic(..))
+import Data.Incremental.Tuple (uncurry)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Maybe.Last (Last(..))
 import Data.Monoid (mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.Tuple (Tuple(..))
 import Prelude as Prelude
 
 newtype IArray a = IArray (Array a)
@@ -78,7 +82,7 @@ static
   -> Jet (IArray a)
 static xs =
   { position: wrap (Prelude.map _.position xs)
-  , velocity: toChange (mapWithIndex (\i -> ModifyAt i <<< fromChange <<< _.velocity) xs)
+  , velocity: toChange (Array.mapWithIndex (\i -> ModifyAt i <<< fromChange <<< _.velocity) xs)
   }
 
 -- | Compute the length of the array incrementally.
@@ -93,7 +97,7 @@ length { position, velocity } =
     }
   where
     go (InsertAt _ _) = Additive 1
-    go (DeleteAt _) | not (null (unwrap position)) = Additive (-1)
+    go (DeleteAt _) | not (Array.null (unwrap position)) = Additive (-1)
     go _ = mempty
 
     additiveToLast (Additive 0) = mempty
@@ -111,7 +115,7 @@ map
   -> Jet (IArray b)
 map f { position: IArray xs, velocity: dxs } =
     { position: IArray (Prelude.map (_.position <<< f <<< constant) xs)
-    , velocity: toChange (mapMaybe go (fromChange dxs))
+    , velocity: toChange (Array.mapMaybe go (fromChange dxs))
     }
   where
     go (InsertAt i a)   = Just (InsertAt i (f (constant a)).position)
@@ -119,3 +123,47 @@ map f { position: IArray xs, velocity: dxs } =
     go (ModifyAt i da)  = (xs !! i) <#> \a ->
       let j = f { position: a, velocity: toChange da }
        in ModifyAt i (fromChange j.velocity)
+
+-- | Annotate an array with the indices of its elements.
+-- |
+-- | _Note_: Insertions or removals in the middle of an array will result
+-- | in a cascade of modifications to the tail of the result.
+withIndex
+  :: forall a da
+   . Patch a da
+  => Jet (IArray a)
+  -> Jet (IArray (Tuple (Atomic Int) a))
+withIndex { position, velocity } =
+    { position: wrap (Array.mapWithIndex (Tuple <<< Atomic) (unwrap position))
+    , velocity: toChange (foldMap go (fromChange velocity))
+    }
+  where
+    len = Array.length (unwrap position)
+
+    go (InsertAt i a)  =
+      InsertAt i (Tuple (Atomic i) a)
+      : Prelude.map
+          (\j -> ModifyAt j (Tuple (pure j) mempty))
+          (Array.range (i + 1) len)
+    go (DeleteAt i)    =
+      DeleteAt i
+      : Prelude.map
+          (\j -> ModifyAt j (Tuple (pure j) mempty))
+          (Array.range i (len - 2))
+    go (ModifyAt i da) = [ModifyAt i (Tuple mempty da)]
+
+-- | Modify each array element by applying the specified function, taking the
+-- | index of each element into account.
+-- |
+-- | _Note_: The function itself must not change over time.
+-- |
+-- | _Note_: Insertions or removals in the middle of an array will result
+-- | in a cascade of modifications to the tail of the result.
+mapWithIndex
+  :: forall a da b db
+   . Patch a da
+  => Patch b db
+  => (Jet (Atomic Int) -> Jet a -> Jet b)
+  -> Jet (IArray a)
+  -> Jet (IArray b)
+mapWithIndex f = withIndex >>> map (uncurry f)

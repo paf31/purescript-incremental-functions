@@ -67,6 +67,20 @@ Modify each array element by applying the specified function.
 
 _Note_: The function itself must not change over time.
 
+#### `mapWithIndex`
+
+``` purescript
+mapWithIndex :: forall a da b db. Patch a da => Patch b db => (Jet (Atomic Int) -> Jet a -> Jet b) -> Jet (IArray a) -> Jet (IArray b)
+```
+
+Modify each array element by applying the specified function, taking the
+index of each element into account.
+
+_Note_: The function itself must not change over time.
+
+_Note_: Insertions or removals in the middle of an array will result
+in a cascade of modifications to the tail of the result.
+
 #### `singleton`
 
 ``` purescript
@@ -83,5 +97,16 @@ static :: forall a da. Patch a da => Array (Jet a) -> Jet (IArray a)
 
 Construct an array whose elements can change but whose length is fixed,
 from an array of jets.
+
+#### `withIndex`
+
+``` purescript
+withIndex :: forall a da. Patch a da => Jet (IArray a) -> Jet (IArray (Tuple (Atomic Int) a))
+```
+
+Annotate an array with the indices of its elements.
+
+_Note_: Insertions or removals in the middle of an array will result
+in a cascade of modifications to the tail of the result.
 
 
