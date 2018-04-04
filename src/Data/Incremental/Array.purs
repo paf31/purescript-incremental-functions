@@ -25,6 +25,7 @@ import Data.Maybe.Last (Last(..))
 import Data.Monoid (mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.Traversable (mapAccumL)
 import Data.Tuple (Tuple(..))
 import Prelude as Prelude
 
@@ -135,22 +136,29 @@ withIndex
   -> Jet (IArray (Tuple (Atomic Int) a))
 withIndex { position, velocity } =
     { position: wrap (Array.mapWithIndex (Tuple <<< Atomic) (unwrap position))
-    , velocity: toChange (foldMap go (fromChange velocity))
+    , velocity: toChange (Array.fold (mapAccumL go len0 (fromChange velocity)).value)
     }
   where
-    len = Array.length (unwrap position)
+    len0 = Array.length (unwrap position)
 
-    go (InsertAt i a)  =
-      InsertAt i (Tuple (Atomic i) a)
-      : Prelude.map
-          (\j -> ModifyAt j (Tuple (pure j) mempty))
-          (Array.range (i + 1) len)
-    go (DeleteAt i)    =
-      DeleteAt i
-      : Prelude.map
-          (\j -> ModifyAt j (Tuple (pure j) mempty))
-          (Array.range i (len - 2))
-    go (ModifyAt i da) = [ModifyAt i (Tuple mempty da)]
+    go len (InsertAt i a) =
+      { accum: len + 1
+      , value: InsertAt i (Tuple (Atomic i) a)
+                 : Prelude.map
+                     (\j -> ModifyAt j (Tuple (pure j) mempty))
+                     (Array.range (i + 1) len)
+      }
+    go len (DeleteAt i) =
+      { accum: len - 1
+      , value: DeleteAt i
+                 : Prelude.map
+                     (\j -> ModifyAt j (Tuple (pure j) mempty))
+                     (Array.range i (len - 2))
+      }
+    go len (ModifyAt i da) =
+      { accum: len
+      , value: [ModifyAt i (Tuple mempty da)]
+      }
 
 -- | Modify each array element by applying the specified function, taking the
 -- | index of each element into account.

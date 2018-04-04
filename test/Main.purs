@@ -92,3 +92,37 @@ main = do
     , Tuple (Atomic 1) (Atomic 'x')
     , Tuple (Atomic 2) (Atomic 'y')
     ]
+
+  let t10 = IArray.withIndex
+             { position: wrap [Atomic 'a', Atomic 'b', Atomic 'c']
+             , velocity:
+                 IArray.insertAt 1 (Atomic 'x')
+                 <> IArray.insertAt 2 (Atomic 'y')
+             }
+  assert $ unwrap t10.position ==
+    [ Tuple (Atomic 0) (Atomic 'a')
+    , Tuple (Atomic 1) (Atomic 'b')
+    , Tuple (Atomic 2) (Atomic 'c')
+    ]
+  assert $ unwrap (patch t10.position (fromChange t10.velocity)) ==
+    [ Tuple (Atomic 0) (Atomic 'a')
+    , Tuple (Atomic 1) (Atomic 'x')
+    , Tuple (Atomic 2) (Atomic 'y')
+    , Tuple (Atomic 3) (Atomic 'b')
+    , Tuple (Atomic 4) (Atomic 'c')
+    ]
+
+  let t11 = IArray.withIndex
+             { position: wrap [Atomic 'a', Atomic 'b', Atomic 'c']
+             , velocity:
+                 IArray.deleteAt 0
+                 <> IArray.deleteAt 0
+             }
+  assert $ unwrap t11.position ==
+    [ Tuple (Atomic 0) (Atomic 'a')
+    , Tuple (Atomic 1) (Atomic 'b')
+    , Tuple (Atomic 2) (Atomic 'c')
+    ]
+  assert $ unwrap (patch t11.position (fromChange t11.velocity)) ==
+    [ Tuple (Atomic 0) (Atomic 'c')
+    ]
