@@ -16,14 +16,13 @@ import Prelude hiding (map)
 
 import Data.Array ((:), (!!))
 import Data.Array as Array
-import Data.Foldable (foldl, foldMap)
+import Data.Enum (enumFromTo)
+import Data.Foldable (foldl)
 import Data.Incremental (class Patch, Change, Jet, constant, fromChange, patch, toChange)
 import Data.Incremental.Eq (Atomic(..))
 import Data.Incremental.Tuple (uncurry)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Maybe.Last (Last(..))
 import Data.Monoid (mempty)
-import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Traversable (mapAccumL)
 import Data.Tuple (Tuple(..))
@@ -93,16 +92,15 @@ length
   => Jet (IArray a)
   -> Jet (Atomic Int)
 length { position, velocity } =
-    { position: wrap (Array.length (unwrap position))
-    , velocity: toChange (additiveToLast (foldMap go (fromChange velocity)))
+    { position: wrap len0
+    , velocity: toChange (pure (foldl go len0 (fromChange velocity)))
     }
   where
-    go (InsertAt _ _) = Additive 1
-    go (DeleteAt _) | not (Array.null (unwrap position)) = Additive (-1)
-    go _ = mempty
+    len0 = Array.length (unwrap position)
 
-    additiveToLast (Additive 0) = mempty
-    additiveToLast (Additive n) = Last (Just (Array.length (unwrap position) + n))
+    go len (InsertAt _ _) = len + 1
+    go len (DeleteAt _) | len > 0 = len - 1
+    go len _ = len
 
 -- | Modify each array element by applying the specified function.
 -- |
@@ -115,15 +113,27 @@ map
   -> Jet (IArray a)
   -> Jet (IArray b)
 map f { position: IArray xs, velocity: dxs } =
-    { position: IArray (Prelude.map (_.position <<< f <<< constant) xs)
-    , velocity: toChange (Array.mapMaybe go (fromChange dxs))
+    { position: IArray (Prelude.map f0 xs)
+    , velocity: toChange (Array.catMaybes (mapAccumL go xs (fromChange dxs)).value)
     }
   where
-    go (InsertAt i a)   = Just (InsertAt i (f (constant a)).position)
-    go (DeleteAt i)     = Just (DeleteAt i)
-    go (ModifyAt i da)  = (xs !! i) <#> \a ->
-      let j = f { position: a, velocity: toChange da }
-       in ModifyAt i (fromChange j.velocity)
+    f0 = _.position <<< f <<< constant
+    f1 position velocity = (f { position, velocity }).velocity
+
+    go :: Array a -> ArrayChange a da -> { accum :: Array a, value :: Maybe (ArrayChange b db) }
+    go xs_ (InsertAt i a) =
+      { accum: fromMaybe xs_ (Array.insertAt i a xs_)
+      , value: Just (InsertAt i (f (constant a)).position)
+      }
+    go xs_ (DeleteAt i) =
+      { accum: fromMaybe xs_ (Array.deleteAt i xs_)
+      , value: Just (DeleteAt i)
+      }
+    go xs_ (ModifyAt i da) =
+      { accum: fromMaybe xs_ (Array.modifyAt i (_ `patch` da) xs_)
+      , value: (xs_ !! i) <#> \a ->
+          ModifyAt i (fromChange (f1 a (toChange da)))
+      }
 
 -- | Annotate an array with the indices of its elements.
 -- |
@@ -146,14 +156,14 @@ withIndex { position, velocity } =
       , value: InsertAt i (Tuple (Atomic i) a)
                  : Prelude.map
                      (\j -> ModifyAt j (Tuple (pure j) mempty))
-                     (Array.range (i + 1) len)
+                     (enumFromTo (i + 1) len)
       }
     go len (DeleteAt i) =
       { accum: len - 1
       , value: DeleteAt i
                  : Prelude.map
                      (\j -> ModifyAt j (Tuple (pure j) mempty))
-                     (Array.range i (len - 2))
+                     (enumFromTo i (len - 2))
       }
     go len (ModifyAt i da) =
       { accum: len

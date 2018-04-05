@@ -16,7 +16,8 @@
     "purescript-these": "^3.0.0",
     "purescript-filterable": "^2.4.1",
     "purescript-typelevel-prelude": "^2.6.0",
-    "purescript-record": "^0.2.6"
+    "purescript-record": "^0.2.6",
+    "purescript-enums": "^3.2.1"
   },
   "devDependencies": {
     "purescript-console": "^3.0.0",
