@@ -103,8 +103,6 @@ length { position, velocity } =
     go len _ = len
 
 -- | Modify each array element by applying the specified function.
--- |
--- | _Note_: The function itself must not change over time.
 map
   :: forall a b da db
    . Patch a da
@@ -114,7 +112,7 @@ map
   -> Jet (IArray b)
 map f { position: IArray xs, velocity: dxs } =
     { position: IArray (Prelude.map f0 xs)
-    , velocity: toChange (Array.catMaybes (mapAccumL go xs (fromChange dxs)).value)
+    , velocity: toChange ((Array.mapWithIndex (\i a -> ModifyAt i (fromChange (f (constant a)).velocity)) xs) <> Array.catMaybes (mapAccumL go xs (fromChange dxs)).value)
     }
   where
     f0 = _.position <<< f <<< constant
@@ -172,8 +170,6 @@ withIndex { position, velocity } =
 
 -- | Modify each array element by applying the specified function, taking the
 -- | index of each element into account.
--- |
--- | _Note_: The function itself must not change over time.
 -- |
 -- | _Note_: Insertions or removals in the middle of an array will result
 -- | in a cascade of modifications to the tail of the result.

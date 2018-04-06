@@ -65,8 +65,6 @@ map :: forall a b da db. Patch a da => Patch b db => (Jet a -> Jet b) -> Jet (IA
 
 Modify each array element by applying the specified function.
 
-_Note_: The function itself must not change over time.
-
 #### `mapWithIndex`
 
 ``` purescript
@@ -75,8 +73,6 @@ mapWithIndex :: forall a da b db. Patch a da => Patch b db => (Jet (Atomic Int) 
 
 Modify each array element by applying the specified function, taking the
 index of each element into account.
-
-_Note_: The function itself must not change over time.
 
 _Note_: Insertions or removals in the middle of an array will result
 in a cascade of modifications to the tail of the result.
