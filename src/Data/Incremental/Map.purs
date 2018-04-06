@@ -13,22 +13,28 @@ module Data.Incremental.Map
   , modifyAt
   , size
   , zip
+  , toIArray
   ) where
 
 import Prelude hiding (map)
 
 import Data.Bifoldable (biany)
+import Data.Bifunctor (lmap)
 import Data.Filterable (filterMap)
 import Data.Foldable (sum)
 import Data.Incremental (class Diff, class Patch, Change, Jet, constant, diff, fromChange, patch, toChange)
-import Data.Incremental.Eq (Atomic)
+import Data.Incremental.Array (ArrayChange(..), IArray)
+import Data.Incremental.Eq (Atomic(..))
 import Data.List (mapMaybe)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Maybe.Last (Last)
 import Data.Monoid (class Monoid, mempty)
+import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.These (These(..))
+import Data.Traversable (mapAccumL)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Prelude as Prelude
@@ -207,6 +213,40 @@ zip { position: IMap m1, velocity: dm1 } { position: IMap m2, velocity: dm2 } =
       go _                                       = Nothing
    in { position: IMap z
       , velocity: toChange (MapChanges (filterMap go (z `align` (unwrap (fromChange dm1) `align` unwrap (fromChange dm2)))))
+      }
+
+-- | Convert an `IMap` into an `IArray` of tuples of keys and values, in order,
+-- | incrementally.
+toIArray
+  :: forall k a da
+   . Ord k
+  => Patch a da
+  => Jet (IMap k a)
+  -> Jet (IArray (Tuple (Atomic k) a))
+toIArray { position, velocity } =
+    { position: wrap (Prelude.map (lmap Atomic) (Map.toAscUnfoldable (unwrap position)))
+    , velocity: toChange (mapAccumL go 0 (Map.toAscUnfoldable (unwrap (fromChange velocity)))).value
+    }
+  where
+    indexOf :: forall x. k -> Map k x -> Int
+    indexOf k m = unwrap (Map.foldSubmap Nothing (Just k) (\_ _ -> Additive 1) m) - 1
+
+    go :: Int
+       -> Tuple k (MapChange a da)
+       -> { accum :: Int
+          , value :: ArrayChange (Tuple (Atomic k) a) (Tuple (Last k) da)
+          }
+    go n (Tuple k (Add a)) =
+      { accum: n + 1
+      , value: InsertAt (n + indexOf k (unwrap position) + 1) (Tuple (Atomic k) a)
+      }
+    go n (Tuple k Remove) =
+      { accum: n - 1
+      , value: DeleteAt (n + indexOf k (unwrap position))
+      }
+    go n (Tuple k (Update da)) =
+      { accum: n
+      , value: ModifyAt (indexOf k (unwrap position)) (Tuple mempty da)
       }
 
 -- Helpers

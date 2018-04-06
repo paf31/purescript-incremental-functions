@@ -123,4 +123,13 @@ zip :: forall k a da b db. Ord k => Patch a da => Patch b db => Jet (IMap k a) -
 
 Zip two maps, keeping those keys which are common to _both_ input maps.
 
+#### `toIArray`
+
+``` purescript
+toIArray :: forall k a da. Ord k => Patch a da => Jet (IMap k a) -> Jet (IArray (Tuple (Atomic k) a))
+```
+
+Convert an `IMap` into an `IArray` of tuples of keys and values, in order,
+incrementally.
+
 

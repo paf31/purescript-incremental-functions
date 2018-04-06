@@ -126,3 +126,18 @@ main = do
   assert $ unwrap (patch t11.position (fromChange t11.velocity)) ==
     [ Tuple (Atomic 0) (Atomic 'c')
     ]
+
+  let t12 = IMap.toIArray
+              { position: wrap (Map.fromFoldable [Tuple 1 (Atomic 1), Tuple 3 (Atomic 3), Tuple 4 (Atomic 4)])
+              , velocity: IMap.insert 2 (Atomic 2) <> IMap.remove 3 <> IMap.updateAt 4 (replace 5)
+              }
+  assert $ unwrap t12.position ==
+    [ Tuple (Atomic 1) (Atomic 1)
+    , Tuple (Atomic 3) (Atomic 3)
+    , Tuple (Atomic 4) (Atomic 4)
+    ]
+  assert $ unwrap (patch t12.position (fromChange t12.velocity)) ==
+    [ Tuple (Atomic 1) (Atomic 1)
+    , Tuple (Atomic 2) (Atomic 2)
+    , Tuple (Atomic 4) (Atomic 5)
+    ]
