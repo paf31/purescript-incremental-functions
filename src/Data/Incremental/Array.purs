@@ -103,20 +103,37 @@ length { position, velocity } =
     go len _ = len
 
 -- | Modify each array element by applying the specified function.
+-- |
+-- | _Note_: the `Eq` constraint is necessary in order to remove unnecessary nil
+-- | changes in the result.
 map
   :: forall a b da db
    . Patch a da
   => Patch b db
+  => Eq db
   => (Jet a -> Jet b)
   -> Jet (IArray a)
   -> Jet (IArray b)
 map f { position: IArray xs, velocity: dxs } =
     { position: IArray (Prelude.map f0 xs)
-    , velocity: toChange ((Array.mapWithIndex (\i a -> ModifyAt i (fromChange (f (constant a)).velocity)) xs) <> Array.catMaybes (mapAccumL go xs (fromChange dxs)).value)
+    , velocity: toChange (f_updates <> xs_updates)
     }
   where
     f0 = _.position <<< f <<< constant
     f1 position velocity = (f { position, velocity }).velocity
+
+    -- Changes originating from changes in f
+    f_updates :: Array (ArrayChange b db)
+    f_updates =
+        Array.filter nonTrivial
+          (Array.mapWithIndex (\i a -> ModifyAt i (fromChange (f (constant a)).velocity)) xs)
+      where
+        nonTrivial (ModifyAt _ db) | db == mempty = false
+        nonTrivial _ = true
+
+    -- Changes originating from changes in xs
+    xs_updates :: Array (ArrayChange b db)
+    xs_updates = Array.catMaybes (mapAccumL go xs (fromChange dxs)).value
 
     go :: Array a -> ArrayChange a da -> { accum :: Array a, value :: Maybe (ArrayChange b db) }
     go xs_ (InsertAt i a) =
@@ -177,6 +194,7 @@ mapWithIndex
   :: forall a da b db
    . Patch a da
   => Patch b db
+  => Eq db
   => (Jet (Atomic Int) -> Jet a -> Jet b)
   -> Jet (IArray a)
   -> Jet (IArray b)
