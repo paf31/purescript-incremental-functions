@@ -60,23 +60,22 @@ Compute the length of the array incrementally.
 #### `map`
 
 ``` purescript
-map :: forall a b da db. Patch a da => Patch b db => (Jet a -> Jet b) -> Jet (IArray a) -> Jet (IArray b)
+map :: forall a b da db. Patch a da => Patch b db => Eq db => (Jet a -> Jet b) -> Jet (IArray a) -> Jet (IArray b)
 ```
 
 Modify each array element by applying the specified function.
 
-_Note_: The function itself must not change over time.
+_Note_: the `Eq` constraint is necessary in order to remove unnecessary nil
+changes in the result.
 
 #### `mapWithIndex`
 
 ``` purescript
-mapWithIndex :: forall a da b db. Patch a da => Patch b db => (Jet (Atomic Int) -> Jet a -> Jet b) -> Jet (IArray a) -> Jet (IArray b)
+mapWithIndex :: forall a da b db. Patch a da => Patch b db => Eq db => (Jet (Atomic Int) -> Jet a -> Jet b) -> Jet (IArray a) -> Jet (IArray b)
 ```
 
 Modify each array element by applying the specified function, taking the
 index of each element into account.
-
-_Note_: The function itself must not change over time.
 
 _Note_: Insertions or removals in the middle of an array will result
 in a cascade of modifications to the tail of the result.

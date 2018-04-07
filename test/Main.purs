@@ -4,6 +4,7 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Data.Incremental (Jet, constant, fromChange, patch)
+import Data.Incremental.Array (IArray(..))
 import Data.Incremental.Array as IArray
 import Data.Incremental.Eq (Atomic(..), mapAtomic, replace)
 import Data.Incremental.Map as IMap
@@ -141,3 +142,10 @@ main = do
     , Tuple (Atomic 2) (Atomic 2)
     , Tuple (Atomic 4) (Atomic 5)
     ]
+
+  let t13 = (\x -> IArray.map \_ -> x)
+              { position: Atomic 1
+              , velocity: replace 2
+              } (constant (IArray [Atomic unit]))
+  assert $ unwrap t13.position == [Atomic 1]
+  assert $ fromChange t13.velocity == fromChange (IArray.modifyAt 0 (replace 2))
