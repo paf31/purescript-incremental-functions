@@ -50,14 +50,14 @@ main = do
              , velocity: IArray.modifyAt 1 (replace 3)
              }
   assert (unwrap t5.position == [wrap 8, wrap 16])
-  assert (fromChange t5.velocity == fromChange (IArray.modifyAt 1 (replace 24)))
+  assert (unwrap (patch t5.position (fromChange t5.velocity)) == [wrap 8, wrap 24])
 
   let t6 = IArray.map (IArray.map times8)
              { position: wrap [wrap [wrap 1, wrap 2], wrap [wrap 3]]
              , velocity: IArray.modifyAt 0 (IArray.modifyAt 1 (replace 4))
              }
   assert (unwrap t6.position == [wrap [wrap 8, wrap 16], wrap [wrap 24]])
-  assert (fromChange t6.velocity == fromChange (IArray.modifyAt 0 (IArray.modifyAt 1 (replace 32))))
+  assert (unwrap (patch t6.position (fromChange t6.velocity)) == [wrap [wrap 8, wrap 32], wrap [wrap 24]])
 
   let testRecord :: IRecord.IRecord (foo :: Atomic Int, bar :: Atomic Char)
       testRecord = IRecord.IRecord { foo: wrap 0, bar: wrap 'a' }

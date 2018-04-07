@@ -103,14 +103,10 @@ length { position, velocity } =
     go len _ = len
 
 -- | Modify each array element by applying the specified function.
--- |
--- | _Note_: the `Eq` constraint is necessary in order to remove unnecessary nil
--- | changes in the result.
 map
   :: forall a b da db
    . Patch a da
   => Patch b db
-  => Eq db
   => (Jet a -> Jet b)
   -> Jet (IArray a)
   -> Jet (IArray b)
@@ -124,12 +120,7 @@ map f { position: IArray xs, velocity: dxs } =
 
     -- Changes originating from changes in f
     f_updates :: Array (ArrayChange b db)
-    f_updates =
-        Array.filter nonTrivial
-          (Array.mapWithIndex (\i a -> ModifyAt i (fromChange (f (constant a)).velocity)) xs)
-      where
-        nonTrivial (ModifyAt _ db) | db == mempty = false
-        nonTrivial _ = true
+    f_updates = Array.mapWithIndex (\i a -> ModifyAt i (fromChange (f (constant a)).velocity)) xs
 
     -- Changes originating from changes in xs
     xs_updates :: Array (ArrayChange b db)
@@ -194,7 +185,6 @@ mapWithIndex
   :: forall a da b db
    . Patch a da
   => Patch b db
-  => Eq db
   => (Jet (Atomic Int) -> Jet a -> Jet b)
   -> Jet (IArray a)
   -> Jet (IArray b)
