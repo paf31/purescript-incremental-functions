@@ -30,7 +30,6 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Maybe.Last (Last)
-import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.These (These(..))

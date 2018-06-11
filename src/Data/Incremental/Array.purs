@@ -22,7 +22,6 @@ import Data.Incremental (class Patch, Change, Jet, constant, fromChange, patch, 
 import Data.Incremental.Eq (Atomic(..))
 import Data.Incremental.Tuple (uncurry)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Monoid (mempty)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Traversable (mapAccumL)
 import Data.Tuple (Tuple(..))

@@ -12,7 +12,7 @@
     "url": "git://github.com/paf31/purescript-incremental-functions.git"
   },
   "dependencies": {
-    "purescript-tuples": "^4.1.0",
+    "purescript-tuples": "^5.0.0",
     "purescript-these": "^4.0.0",
     "purescript-typelevel-prelude": "^3.0.0",
     "purescript-enums": "^4.0.0",

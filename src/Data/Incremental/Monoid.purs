@@ -8,7 +8,6 @@ module Data.Incremental.Monoid
 import Prelude
 
 import Data.Incremental (class Patch, Change, toChange)
-import Data.Monoid (class Monoid)
 import Data.Monoid.Dual (Dual(..))
 import Data.Newtype (class Newtype)
 

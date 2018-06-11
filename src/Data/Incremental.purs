@@ -21,7 +21,6 @@ module Data.Incremental
 
 import Prelude
 
-import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
 import Unsafe.Coerce (unsafeCoerce)
 
