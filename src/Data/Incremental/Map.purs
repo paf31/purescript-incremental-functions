@@ -224,8 +224,8 @@ toIArray
   => Jet (IMap k a)
   -> Jet (IArray (Tuple (Atomic k) a))
 toIArray { position, velocity } =
-    { position: wrap (Prelude.map (lmap Atomic) (Map.toAscUnfoldable (unwrap position)))
-    , velocity: toChange (mapAccumL go 0 (Map.toAscUnfoldable (unwrap (fromChange velocity)))).value
+    { position: wrap (Prelude.map (lmap Atomic) (Map.toUnfoldable (unwrap position)))
+    , velocity: toChange (mapAccumL go 0 (Map.toUnfoldable (unwrap (fromChange velocity)))).value
     }
   where
     indexOf :: forall x. k -> Map k x -> Int

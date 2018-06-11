@@ -2,6 +2,10 @@ module Data.Incremental.Record
   ( IRecord(..)
   , get
   , update
+  , class MonoidRL
+  , memptyRL
+  , class SemigroupRL
+  , appendRL
   , class PatchRL
   , patchRL
   ) where
@@ -9,11 +13,11 @@ module Data.Incremental.Record
 import Prelude
 
 import Data.Incremental (class Patch, Change, Jet, fromChange, patch, toChange)
-import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (class Newtype, unwrap, wrap)
-import Data.Record as Record
 import Data.Symbol (class IsSymbol, SProxy(..))
-import Type.Row (class RowLacks, class RowToList, Cons, Nil, RLProxy(..), kind RowList)
+import Type.Row (class RowToList, Cons, Nil, RLProxy(..), kind RowList)
+import Record as Record
+import Prim.Row as Row
 
 newtype IRecord r = IRecord (Record r)
 
@@ -34,8 +38,8 @@ instance semigroupRLCons
     :: ( IsSymbol l
        , Semigroup a
        , SemigroupRL rl r1
-       , RowCons l a r1 r2
-       , RowLacks l r1
+       , Row.Cons l a r1 r2
+       , Row.Lacks l r1
        )
     => SemigroupRL (Cons l a rl) r2 where
   appendRL _ x y =
@@ -63,8 +67,8 @@ instance monoidRLCons
     :: ( IsSymbol l
        , Monoid a
        , MonoidRL rl r1
-       , RowCons l a r1 r2
-       , RowLacks l r1
+       , Row.Cons l a r1 r2
+       , Row.Lacks l r1
        )
     => MonoidRL (Cons l a rl) r2 where
   memptyRL _ =
@@ -90,10 +94,10 @@ instance patchRLCons
     :: ( IsSymbol l
        , Patch a m
        , PatchRL r1 rl d1 dl
-       , RowCons l a r1 r2
-       , RowCons l m d1 d2
-       , RowLacks l r1
-       , RowLacks l d1
+       , Row.Cons l a r1 r2
+       , Row.Cons l m d1 d2
+       , Row.Lacks l r1
+       , Row.Lacks l d1
        )
     => PatchRL r2 (Cons l a rl) d2 (Cons l m dl) where
   patchRL _ _ x y =
@@ -110,8 +114,8 @@ instance patchRLCons
 get
   :: forall l a da r rl rest1 rest2 d dl
    . IsSymbol l
-  => RowCons l a rest1 r
-  => RowCons l da rest2 d
+  => Row.Cons l a rest1 r
+  => Row.Cons l da rest2 d
   => RowToList r rl
   => RowToList d dl
   => PatchRL r rl d dl
@@ -128,8 +132,8 @@ get l { position, velocity } =
 update
   :: forall l a da r rl rest1 rest2 d dl
    . IsSymbol l
-  => RowCons l a rest1 r
-  => RowCons l da rest2 d
+  => Row.Cons l a rest1 r
+  => Row.Cons l da rest2 d
   => RowToList r rl
   => RowToList d dl
   => PatchRL r rl d dl
