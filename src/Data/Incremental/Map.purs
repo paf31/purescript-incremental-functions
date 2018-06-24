@@ -30,7 +30,6 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Maybe.Last (Last)
-import Data.Monoid (class Monoid, mempty)
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.These (These(..))
@@ -224,8 +223,8 @@ toIArray
   => Jet (IMap k a)
   -> Jet (IArray (Tuple (Atomic k) a))
 toIArray { position, velocity } =
-    { position: wrap (Prelude.map (lmap Atomic) (Map.toAscUnfoldable (unwrap position)))
-    , velocity: toChange (mapAccumL go 0 (Map.toAscUnfoldable (unwrap (fromChange velocity)))).value
+    { position: wrap (Prelude.map (lmap Atomic) (Map.toUnfoldable (unwrap position)))
+    , velocity: toChange (mapAccumL go 0 (Map.toUnfoldable (unwrap (fromChange velocity)))).value
     }
   where
     indexOf :: forall x. k -> Map k x -> Int

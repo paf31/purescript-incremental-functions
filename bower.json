@@ -12,16 +12,18 @@
     "url": "git://github.com/paf31/purescript-incremental-functions.git"
   },
   "dependencies": {
-    "purescript-maps": "^3.0.0",
-    "purescript-these": "^3.0.0",
-    "purescript-filterable": "^2.4.1",
-    "purescript-typelevel-prelude": "^2.6.0",
-    "purescript-record": "^0.2.6",
-    "purescript-enums": "^3.2.1"
+    "purescript-tuples": "^5.0.0",
+    "purescript-these": "^4.0.0",
+    "purescript-typelevel-prelude": "^3.0.0",
+    "purescript-enums": "^4.0.0",
+    "purescript-filterable": "^3.0.0",
+    "purescript-record": "^1.0.0",
+    "purescript-foldable-traversable": "^4.0.0",
+    "purescript-ordered-collections": "^1.0.0"
   },
   "devDependencies": {
-    "purescript-console": "^3.0.0",
-    "purescript-psci-support": "^3.0.0",
-    "purescript-assert": "^3.0.0"
+    "purescript-console": "^4.1.0",
+    "purescript-psci-support": "^4.0.0",
+    "purescript-assert": "^4.0.0"
   }
 }

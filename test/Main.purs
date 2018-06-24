@@ -2,7 +2,6 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
 import Data.Incremental (Jet, constant, fromChange, patch)
 import Data.Incremental.Array (IArray(..))
 import Data.Incremental.Array as IArray
@@ -11,11 +10,11 @@ import Data.Incremental.Map as IMap
 import Data.Incremental.Record as IRecord
 import Data.Map as Map
 import Data.Maybe.Last (Last(..))
-import Data.Monoid (mempty)
 import Data.Newtype (unwrap, wrap)
 import Data.Symbol (SProxy(..))
 import Data.Tuple (Tuple(..))
-import Test.Assert (ASSERT, assert)
+import Effect (Effect)
+import Test.Assert (assert)
 
 -- | The function \x -> x * 2, together with its derivative
 times2 :: Jet (Atomic Int) -> Jet (Atomic Int)
@@ -25,7 +24,7 @@ times2 = mapAtomic (_ * 2)
 times8 :: Jet (Atomic Int) -> Jet (Atomic Int)
 times8 = times2 >>> times2 >>> times2
 
-main :: Eff (assert :: ASSERT) Unit
+main :: Effect Unit
 main = do
   let t1 = times8 (constant (wrap 1))
   assert (t1.position == wrap 8)
