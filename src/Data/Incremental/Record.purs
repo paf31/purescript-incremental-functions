@@ -15,7 +15,7 @@ import Prelude
 import Data.Incremental (class Patch, Change, Jet, fromChange, patch, toChange)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Symbol (class IsSymbol, SProxy(..))
-import Type.Row (class RowToList, Cons, Nil, RLProxy(..), kind RowList)
+import Type.RowList (class RowToList, Cons, Nil, RLProxy(..), kind RowList)
 import Record as Record
 import Prim.Row as Row
 
